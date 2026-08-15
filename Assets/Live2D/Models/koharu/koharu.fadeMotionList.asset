@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 403ae2dd693bb1d4b924f6b8d206b053, type: 3}
+  m_Name: koharu.fadeMotionList
+  m_EditorClassIdentifier: 
+  MotionInstanceIds: 2acbfffff4caffffcccaffffa4caffff7ccaffff54caffff2ccaffff04caffffdcc9ffffb4c9ffff8cc9ffff
+  CubismFadeMotionObjects:
+  - {fileID: 11400000, guid: 877bc1ed508da414e872ad0cb0c40223, type: 2}
+  - {fileID: 11400000, guid: 51bc537d2ce706a48899dfcaa6b82c33, type: 2}
+  - {fileID: 11400000, guid: 580194b9534334a4b84389b187ea837f, type: 2}
+  - {fileID: 11400000, guid: 461b78a393f0a514ab64a3462751336a, type: 2}
+  - {fileID: 11400000, guid: a56a409e3d0a0cd4f8f903ee43e50dfc, type: 2}
+  - {fileID: 11400000, guid: 5b126d27e4481644a84cee67650b4117, type: 2}
+  - {fileID: 11400000, guid: 358f5711213ed8546a2a286cba24d6ad, type: 2}
+  - {fileID: 11400000, guid: fb7fd32b17dfd8d4483316ddfe555aa5, type: 2}
+  - {fileID: 11400000, guid: 55430dc81aa517a48a668f0872d00656, type: 2}
+  - {fileID: 11400000, guid: d2391bd51f2c0eb4e830bd2f85e6c169, type: 2}
+  - {fileID: 11400000, guid: 0dd422a52304528499d10d1983f48b07, type: 2}

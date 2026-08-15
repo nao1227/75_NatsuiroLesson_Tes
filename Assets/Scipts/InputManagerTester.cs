@@ -10,7 +10,7 @@ public class InputManagerTester : MonoBehaviour
     {
         var mouseInput = new MouseInputProvider(null);
         var stubTrigger = new StubInputTrigger();
-
+        TargetInputManager.CameraManager = new OsawariCameraManager();
         TargetInputManager.ManagedStart(null, mouseInput, stubTrigger);
 
         Debug.Log("InputManager を初期化しました");
@@ -18,10 +18,10 @@ public class InputManagerTester : MonoBehaviour
 
     void Update()
     {
-          if (Input.GetMouseButtonDown(0))
-    {
-        Debug.Log("マウスクリック検知(Unity標準)");
-    }
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("マウスクリック検知(Unity標準)");
+        }
         Debug.Log("MouseOn: " + TargetInputManager.MouseOn);
     }
 }

@@ -33,7 +33,81 @@ Assets/
 ├── Experiment/
 │ ├── Scripts/ ← 解析対象の本物コード(コピー、極力編集しない)
 │ ├── Stubs/ ← スタブ置き場
-│ └── Testers/ ← テストコード(観察用)
+│ └── Testers/ ← テストコード(観察用# 学習ログ: InputManager「クリックしたら動く処理」達成
+
+## 今回のセッションの流れ
+
+### 1. シーン状態の巻き戻りトラブルと復旧
+
+前回終了時に作成した InputManagerObj・Tester(InputManagerTester用)の配置が、
+シーン上から消えて MouseInputProvider 実験時の状態に戻っていた。
+
+- 原因の推測: シーンファイルの保存タイミングとGit操作のタイミングがズレていた可能性
+- 確認したこと: .cs ファイルの中身(コード)は無事だった。消えていたのは
+  シーン上の「GameObjectへのアタッチ・Inspector設定」だけ
+- 教訓: コード(スクリプト)とシーン(配置)は別々に保存されるため、
+  Git操作の前後でズレることがある。作業の節目でシーンも保存する習慣が必要
+
+### 復旧手順
+1. 空のGameObjectを作成、名前を InputManagerObj に変更
+2. InputManagerObj に InputManager.cs をアタッチ
+3. 別の空のGameObjectを作成、名前を Tester に変更
+4. Tester に InputManagerTester.cs をアタッチ
+5. Tester の Target Input Manager 欄に InputManagerObj をドラッグ&ドロップ
+
+これで前回と同じ状態(Subscribeの中身に到達、MoveCameraでNullReferenceException)まで再現できた。
+
+## OsawariCameraManager の役割(復習)
+
+InputManager内での使われ方から、以下の役割と判断:
+
+```csharp
+case MouseOn.None:
+    _isInOsawari.Value = true;
+    await MoveCamera(_tokenSource.Token);   // 何もない場所をクリックした時
+    break;
+```
+
+```csharp
+private async UniTask MoveCamera(CancellationToken token)
+{
+    CameraManager.SetMousePos(GetCurrentMousePosition());   // クリック時の位置を記録
+    while (_pressed)
+    {
+        await UniTask.Yield(token);
+        CameraManager.MoveCamera(GetCurrentMousePosition());  // 毎フレーム位置を送り続ける
+    }
+}
+```
+
+- 「クリックした瞬間の位置」を基準に「今のマウス位置」を毎フレーム送り続ける構造から、
+  ドラッグの動きに応じてカメラを動かす設計だと判断(ロジック面では確定、視覚的な動作は未確認)
+- マウスホイールでのズーム処理(CameraZoom)も担当している
+- 今回は「呼ばれることの確認」までを目的とし、実際に画面上でカメラが動くところまでは踏み込まない方針とした
+
+## CameraManager の null 問題を解決
+
+OsawariCameraManager は MonoBehaviour を継承していない普通のクラスのため、
+InspectorのCamera Manager欄にドラッグ&ドロップで設定することができない。
+
+### 対処: コードで直接インスタンスをセットする
+
+InputManagerTester.cs の Start() に1行追加:
+
+```csharp
+void Start()
+{
+    var mouseInput = new MouseInputProvider(null);
+    var stubTrigger = new StubInputTrigger();
+
+    TargetInputManager.CameraManager = new OsawariCameraManager();   // 追加した行
+    TargetInputManager.ManagedStart(null, mouseInput, stubTrigger);
+
+    Debug.Log("InputManager を初期化しました");
+}
+```
+
+## 結果: 今回の目的「クリックしたら動く処理」を達成)
 ## namespace による本物とスタブの競合回避
 
 - スタブは最初から `namespace Stubs { }` で囲んでおく(後から競合して直すと修正箇所が増えるため)
@@ -88,4 +162,33 @@ Assets/
 - `--force` は履歴を上書きする強い操作。他の人と共同作業している場合は特に注意が必要
   (今回は一人での学習用リポジトリのため問題なし)
 - 作業前に Current branch が意図したブランチになっているか、必ず確認する習慣をつける
+MoveCamera が呼ばれた: (156.40, ...)
+MoveCamera が呼ばれた: (90.85, ...)
+NullReferenceException が解消され、MoveCameraが正常に呼ばれることを確認できた。
+マウスを押している間、座標が変化しながら連続でログが出ることも確認済み(想定通りの挙動)。
 
+## クリック処理の全体フロー(確認完了)
+クリック
+↓ ①検知(Unity標準のInput.GetMouseButtonDownで確認)
+InputGrab()
+↓ ②UniRxのwhere条件を通過(_raycasterチェックは検証後に元の仕様へ復元済み)
+Subscribeの中身
+↓ ③MouseOn判定 → None(何もない場所をクリック)
+MoveCamera()呼び出し
+↓ ④CameraManager.MoveCamera(座標) 呼び出し成功
+ログ出力: MoveCamera が呼ばれた: (座標)
+## Tips: VS Codeでのコード自動整形
+
+コピペ等でインデントが崩れた際は、以下のショートカットで自動整形できる。
+整形後は Ctrl+S での保存を忘れないこと。
+
+## 現状まとめ
+
+- InputManager の「クリックしたら動く処理(MouseOn.Noneのケース)」の検証が完了
+- _raycaster が null のため MouseOn.Osawari のケース(実際にOsawariに触れる処理)は未検証のまま
+- 実際に画面上でカメラが視覚的に動くところまでは未実装(必要になれば次回検討)
+
+## 次にやること(候補)
+- 本物の CubismRaycaster を用意して、MouseOn.Osawari のケースまで検証する(選択肢A、大掛かり)
+- 別のクラス(OsawariManager本体など)の学習に進む
+- 今回のスタブ・実験環境を土台に、別の処理を試す
