@@ -192,3 +192,186 @@ MoveCamera()呼び出し
 - 本物の CubismRaycaster を用意して、MouseOn.Osawari のケースまで検証する(選択肢A、大掛かり)
 - 別のクラス(OsawariManager本体など)の学習に進む
 - 今回のスタブ・実験環境を土台に、別の処理を試す
+- # 学習ログ: 本物のLive2Dモデル導入(MouseOn.Osawariルート検証の準備)
+
+## 今回の目的
+InputManagerの「クリックしたら動く処理」はMouseOn.Noneルートで達成済み。
+残る MouseOn.Osawari ルート(実際にモデルに触れた時の処理)を検証するため、
+本物のLive2Dモデルと CubismRaycaster を実験用プロジェクトに導入する準備を進めた。
+
+## わかったこと
+
+### 実験用プロジェクトにLive2Dの本物のモデルは入っていなかった
+- Assets/Live2D/Cubism フォルダにあったのは「仕組み(SDK)」だけ
+- 「実際のキャラクターのモデルデータ」は別途用意する必要があった
+- 3Dモデル(SD_unitychan_humanoidなど)とLive2D(2D)モデルは別物。
+  CubismRaycasterは2D(Live2D)専用で3Dモデルには使えない
+
+### Live2Dモデルの導入手順
+1. Cubism Editorの出力データの中から `runtime` フォルダを探す
+   (.cmo3 は編集用プロジェクトファイルでUnityでは使わない)
+2. runtime フォルダの中身一式をコピー:
+   - [モデル名].moc3(モデル本体)
+   - [モデル名].model3.json(設定ファイル)
+   - [モデル名].physics3.json(物理演算設定)
+   - [モデル名].cdi3.json(パラメータ情報)
+   - [モデル名].2048/ (テクスチャフォルダ)
+   - motion/ (モーションフォルダ)
+3. Assets内の新しいフォルダ(例: Assets/Live2D/Models/[モデル名])に丸ごとコピー
+4. Unityが自動でPrefabやマテリアルを生成する
+5. 生成されたPrefabをHierarchyにドラッグ&ドロップしてシーンに配置
+
+実際に hiyori_free_t08 モデルの導入に成功した。
+
+### 見た目が粗く(ドット絵っぽく)見えた原因
+- テクスチャ解像度は十分高い(2048x2048)だが、Game画面上での表示サイズが小さすぎたため
+- 原因は Main Camera の Orthographic Size 設定だった
+  - 本物のプロジェクト(参考にした別プロジェクト): Size = 0.8
+  - 実験用プロジェクト: Size = 5前後(標準的なデフォルト値に近い、モデルが小さく表示される)
+- Orthographic Size は「カメラが画面に映す範囲の広さ」を表す設定
+  - 値が小さい = ズームインしたようにモデルが大きく見える
+  - 値が大きい = ズームアウトしたようにモデルが小さく見える
+- 対処: 実験用プロジェクトの Main Camera の Size を 0.8 に変更する(次回試す)
+
+### 待機モーションについて
+- デフォルトでは、モデルをシーンに置いただけでは待機モーションは自動再生されない
+- 自動再生されるには CubismMotionController 等のコンポーネントと、
+  起動時にモーション再生を指示するスクリプトが必要
+- Live2D Cubism SDKがインポート時に自動でコンポーネント一式を付与してくれることがある
+- 今回の目的(CubismRaycasterでの当たり判定検証)には待機モーションの動作は不要と判断、優先度低として保留
+
+## 優先順位の整理(今回の判断)
+
+| 項目 | 優先度 | 理由 |
+|---|---|---|
+| 待機モーションが自動再生されるか | 低 | 見た目の話で、当たり判定の検証には無関係 |
+| カメラサイズの調整 | 中 | 見た目の話だが、クリックのしやすさには関わる |
+| CubismRaycasterをモデルにアタッチし、InputManagerTesterから渡せるようにする | 高 | MouseOn.Osawariルート検証の本質的な作業 |
+
+## 次にやること
+1. hiyori_free_t08(または別モデル)に CubismRaycaster コンポーネントを Add Component で追加する
+2. InputManagerTester.cs で、そのモデルの CubismRaycaster を取得し、
+   ManagedStart(raycaster, mouseInput, stubTrigger) の第1引数に渡すよう修正する
+3. Main CameraのOrthographic Sizeを0.8程度に調整する(任意、見やすさのため)
+4. モデルをクリックしてみて、MouseOn が Osawari に変化するか確認する
+
+# 学習ログ: Live2Dモデル導入とCubismRaycaster検証(完了)
+
+## 今回の目的
+InputManagerの「MouseOn.Osawariルート」を検証するため、本物のLive2Dモデルを導入し、
+CubismRaycasterによる実際のクリック当たり判定を確認する。
+
+## 実施内容
+
+### 1. 本物のLive2Dモデルの導入
+- hiyori_free_t08 モデルをAssets/Live2D/Models/hiyoriに配置
+- Live2D公式サンプルモデルを使用(以前入れた3Dモデル SD_unitychan は誤りと気づき削除)
+
+### 2. カメラサイズの調整(任意)
+- Main Camera の Orthographic Size を調整し、見やすい表示に変更
+
+### 3. CubismRaycasterのアタッチと接続
+- hiyori_free_t08 に CubismRaycaster コンポーネントを追加
+- InputManagerTester.cs に public CubismRaycaster ModelRaycaster フィールドを追加し、
+  ManagedStart の第1引数に渡すよう修正
+
+```csharp
+public CubismRaycaster ModelRaycaster;
+
+void Start()
+{
+    var mouseInput = new MouseInputProvider(null);
+    var stubTrigger = new StubInputTrigger();
+
+    TargetInputManager.CameraManager = new OsawariCameraManager();
+    TargetInputManager.ManagedStart(ModelRaycaster, mouseInput, stubTrigger);
+
+    Debug.Log("InputManager を初期化しました");
+}
+```
+
+- Inspector上で Model Raycaster 欄に hiyori_free_t08 をドラッグ&ドロップして接続
+
+### 4. Raycastの動作確認
+IsMouseOnOsawariParts に一時的にログを追加して検証:
+
+```csharp
+int hitCount = _raycaster.Raycast(ray, array);
+Debug.Log("Raycastヒット数: " + hitCount);
+```
+
+結果:
+Raycastヒット数: 0 (モデルの外をクリックした時)
+Raycastヒット数: 1 (モデルに当たった時、成功)
+
+**本物のLive2Dモデルに対して、CubismRaycasterが正しく当たり判定を検出できることを実証できた。**
+
+## 今回の目標は達成、MouseOn.Osawariには未到達(意図的)
+
+Raycastは成功しているが、MouseOnは終始 None のままだった。理由:
+
+```csharp
+// StubInputTrigger.cs
+public AbstractOsawari GetOsawariFromDrawable(CubismDrawable mesh) => null;
+```
+
+IsMouseOnOsawariParts が true になるには「Raycastが当たる」だけでなく
+「GetOsawariFromDrawable が null 以外を返す」必要があるため、これは想定通りの挙動。
+
+技術的には、StubInputTrigger.GetOsawariFromDrawable の返り値を null から
+何らかのAbstractOsawariインスタンスに育てれば、MouseOn.Osawariまで到達させることは可能
+(Drawableの検出自体はすでにできているため)。
+
+## 今回の判断: MouseOn.Osawariへの到達は行わず、ここで一区切り
+
+- Raycastによる当たり判定の実証(今回の目的)は達成済み
+- MouseOn.Osawariまで進めるかは目的次第と判断し、今回は見送り
+- 必要になれば次回、StubInputTriggerの拡張から再開できる状態
+
+## 設計思想についての気づき: UniRxのsourceを分離する理由
+
+InputManager.SetUpRx() 内で、なぜ以下のように source2 という中間変数に
+分けているのか考察した:
+
+```csharp
+IObservable<long> source2 = from _ in Observable.EveryGameObjectUpdate()
+    where _input.InputGrab() && !_pressed
+    select _;
+
+(from _ in source2
+    where _manager.GetScene() == null || !_manager.GetScene().IsModalWindowOpen.Value
+    where _raycaster != null && null != Camera.main
+    select new { ... }).Subscribe(async x => { ... });
+```
+
+技術的には1つのwhere群にまとめることも可能だが、あえて分離されている理由:
+
+- source2 = 「クリックが発生したという、生の入力イベント」
+- その後のwhere群 = 「そのクリックを、今のゲーム状態的に受け付けていいかの判定」
+- 役割の異なる条件を分けることで、可読性・保守性が上がる
+- 変数名(source2)が「見出し」の役割を果たし、全部読まなくても大まかな構造を把握できる
+- デバッグ時も、どの段階で処理が止まっているか切り分けやすくなる
+  (実際に今回「Subscribeの中身に到達した」ログで、この構造の恩恵を体感した)
+
+## UniRxの実行タイミングの整理
+
+- SetUpRx() 自体は ManagedStart から1回だけ呼ばれる「組み立てフェーズ」
+- Subscribe(async x => {...}) の中身は、クリックが発生するたびに何度でも実行される
+- _pressedMouseOn = _mouseOn; は Subscribe内にあるため、クリックのたびに現在のMouseOn値を記録している
+
+## プロパティの評価タイミングについて
+
+- MouseOn はプロパティであり、「呼ばれる」というより「読まれる(アクセスされる)たびに、get の中身が実行される」
+- 本物のゲームでは、クリックされた瞬間に1回だけ MouseOn を読み取り、switch文で処理を振り分けている
+  (今回のテストコードのようにUpdate内で毎フレーム読む使い方とは異なる、より無駄のない設計)
+
+## MainThreadDispatcherについて
+
+- UniRxのObservable機能が最初に使われたタイミングで、自動的に1回だけ生成される常駐オブジェクト
+- DontDestroyOnLoadに配置され、ゲーム終了までシーンをまたいで生き続ける
+- 毎フレーム、登録されている全てのObservableに「Updateが来た」という通知を配る「配達員」の役割
+- EveryGameObjectUpdate()が呼ばれるたびに新しく生成されるわけではない
+
+## 次にやること(候補)
+- 別のクラス(OsawariManager本体など)の学習に進む
+- 必要になれば、StubInputTrigger.GetOsawariFromDrawable を拡張してMouseOn.Osawariルートまで検証する

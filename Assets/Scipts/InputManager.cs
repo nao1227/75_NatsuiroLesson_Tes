@@ -108,6 +108,9 @@ public class InputManager : MonoBehaviour
 			{
 				CubismRaycastHit[] array = new CubismRaycastHit[8];
 				Ray ray = Camera.main.ScreenPointToRay(_input.GetPosition());
+
+				 int hitCount = _raycaster.Raycast(ray, array);
+            Debug.Log("Raycastヒット数: " + hitCount);   // ← この行を追加
 				_raycaster.Raycast(ray, array);
 				CubismRaycastHit[] array2 = array;
 				for (int i = 0; i < array2.Length; i++)
@@ -179,8 +182,8 @@ public class InputManager : MonoBehaviour
 			select _;
 		(from _ in source2
 			where _manager.GetScene() == null || !_manager.GetScene().IsModalWindowOpen.Value
-			// where _raycaster != null && null != Camera.main
-			where null != Camera.main //テスト用
+			 where _raycaster != null && null != Camera.main
+			//where null != Camera.main //テスト用
 			select new
 			{
 				Results = new CubismRaycastHit[8],
