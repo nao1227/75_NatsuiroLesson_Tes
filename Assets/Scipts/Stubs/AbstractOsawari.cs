@@ -4,14 +4,31 @@ namespace Stubs
 {
     public class AbstractOsawari
     {
+        public int Priority;
+        public bool IsAnimating;
+
         public bool GetConstraints()
         {
-            return false;
+            return true;
         }
 
         public bool CanTouchMesh(CubismDrawable mesh)
         {
-            return false;
+            return true;
         }
+
+        public void ManagedStart(object owner, System.Threading.CancellationToken token) { }
+        public void PostInitialize() { }
+        public void Cancel() { }
+        public void SwitchContext() { }
+        public void ManagedUpdate() { }
+        public void ManagedUpdateWhileNotActive() { }
+        public void ManagedLateUpdate() { }
+        public void OnClick(CubismDrawable mesh, bool isFirst) { }
+        public void OnMouseUp() { }
+        public void OnSpecial() { }
+        public void SetAuto() { }
+
+        public System.Collections.Generic.List<CubismDrawable> TouchableMeshs = new System.Collections.Generic.List<CubismDrawable>();
     }
 }

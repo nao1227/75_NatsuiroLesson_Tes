@@ -12,7 +12,10 @@ namespace Stubs
         public void OnInputSpecialTrigger(CubismRaycastHit[] results, int hitCount) { }
         public bool IsClickingAtMesh(CubismRaycastHit[] results, int hitCount) => false;
         public CubismRaycaster GetCubismRaycaster() => null;
-        public AbstractOsawari GetOsawariFromDrawable(CubismDrawable mesh) => null;
+        public AbstractOsawari GetOsawariFromDrawable(CubismDrawable mesh)
+        {
+            return new AbstractOsawari();
+        }
         public Scene GetScene() => null;
     }
 }

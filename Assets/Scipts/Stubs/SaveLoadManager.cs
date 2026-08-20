@@ -3,8 +3,16 @@ namespace Stubs
     public class SaveLoadManager
 {
     public static GlobalDataClass GlobalData = new GlobalDataClass();
+    public static UnsavedDataClass UnsavedData = new UnsavedDataClass();
 }
 
+ public class UnsavedDataClass
+    {
+        public int KissCount;
+        public int FellaSceneCount;
+        public int Days;
+    }
+    
 public class GlobalDataClass
 {
     public GameOptionClass GameOption = new GameOptionClass();

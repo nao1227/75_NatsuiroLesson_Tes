@@ -1,338 +1,353 @@
-# 2026-08-10 学習ログ: MouseInputProvider の実験
+# Osawari システム学習ログ(統合版)
 
-## 今回の目的
-`MouseInputProvider` を実験用プロジェクトで実際に動かして検証する。
+## 学習の進め方・基本方針
 
-## 依存関係マッピングの手順(復習)
-1. クラスの「持ち物」を見る(フィールド一覧)= 依存の洗い出し
-2. 「誰から作られるか(注入されるか)」を見る(コンストラクタ/メソッドの引数)
-3. 表にまとめる(依存先・型・注入方法)
+- 依存が少ない・末端のクラスから読み始める(IInputProvider → MouseInputProvider → InputManager → OsawariManager の順)
+- クラス全体・メソッド全体を網羅する必要はない。「今回の目的」を1つ決めて、それに関係する最短ルートだけを辿る
+- 目的の設定と道筋の提示はAIに頼ってよいが、実装・実行は自分の手で行うと理解が深まる
+- テストコードは基本的に消さず、他クラスの実験でも再利用する前提で残しておく
+- 解析対象の本物コードにはデバッグコードを書き込まず、観察用の別ファイル(Testerクラス)から外側だけ呼び出して検証する
+- スタブは基本残す方針だが、保存容量などの制約がある場合は「一時的に作って確認後に消す」でもよい。その場合はファイルは消してもglossaryに型の構造だけ記録しておく
 
-## MouseInputProvider の依存関係
+---
 
-| 依存先 | 型 | 注入方法 | 実験での対応 |
-|---|---|---|---|
-| _utage | UtageManager | コンストラクタ注入 | スタブ作成 |
-| Input | Unity標準 | 静的アクセス | そのまま動く |
-| SaveLoadManager.GlobalData | 静的プロパティ | 直接アクセス | スタブ自作が必要 |
-
-## 用語
+## 用語集
 
 - **glossary(グロッサリー)**: 用語集
 - **Docs(ドックス)**: 資料・書類フォルダ
 - **study(スタディ)**: 学習・研究
 - **Experiment(エクスペリメント)**: 実験
-- **スタブ(stub)**: 本物のクラスの代わりに使う、型だけ合わせた最低限の偽物クラス。中身のロジックはほぼ無い。撮影の「書割(はりぼて)」のようなもの。
-- **注入される依存(Injected Dependency)**: コンストラクタや引数で外から渡してもらう依存。差し替えが簡単(例: `_utage`)。
-- **静的な依存(Static Dependency)**: コード内に直書きされた依存。差し替えできない。実験時はスタブが必須(例: `SaveLoadManager.GlobalData`)。
-- **コンストラクタ**: クラス名と同名・戻り値なしのメソッド。`new` された瞬間に1回だけ呼ばれる初期化処理。
+- **スタブ(stub)**: 本物のクラスの代わりに使う、型だけ合わせた最低限の偽物クラス。中身のロジックはほぼ無い
+- **注入される依存(Injected Dependency)**: コンストラクタや引数で外から渡してもらう依存。差し替えが簡単
+- **静的な依存(Static Dependency)**: コード内に直書きされた依存。差し替えできない。実験時はスタブが必須
+- **コンストラクタ**: クラス名と同名・戻り値なしのメソッド。newされた瞬間に1回だけ呼ばれる初期化処理
+- **列挙型(enum)**: 決まった選択肢の中から1つを表す型。switch文で複数の決まった選択肢を分岐している型はenumの可能性が高い
+- **プロパティ**: 見た目は変数だが中身はメソッドのように動く処理。アクセスする(読む)たびにgetの中身が実行される
 
-## 実験用プロジェクトのフォルダ構成
-Assets/
-├── Docs/ ← 学習メモ(.md)
-├── Experiment/
-│ ├── Scripts/ ← 解析対象の本物コード(コピー、極力編集しない)
-│ ├── Stubs/ ← スタブ置き場
-│ └── Testers/ ← テストコード(観察用# 学習ログ: InputManager「クリックしたら動く処理」達成
+---
 
-## 今回のセッションの流れ
+## 依存関係マッピングの手順
 
-### 1. シーン状態の巻き戻りトラブルと復旧
+1. クラスの「持ち物」を見る(フィールド一覧)= 依存の洗い出し
+2. 「誰から作られるか(注入されるか)」を見る(コンストラクタ/メソッドの引数)
+3. 表にまとめる(依存先・型・注入方法)
+4. メソッドの引数・戻り値の「型」も依存としてカウントする
+5. インターフェースは実装を持たないため依存が少なく、末端に近い(名前が `I〜` で始まるものはインターフェースの可能性が高い、という命名規則から推測できる)
+6. 使われ方(呼び出し箇所)から、インターフェースが持つメソッド一覧を逆算できる
 
-前回終了時に作成した InputManagerObj・Tester(InputManagerTester用)の配置が、
-シーン上から消えて MouseInputProvider 実験時の状態に戻っていた。
+### 命名規則から中身を予測するコツ
+- `Is〜`で始まるメソッド/プロパティは基本的にboolを返す
+- パスカルケースの単語区切りで英文法通りに読むと、メソッド名から中身を予測できる
+- `Not`・`Or`・`And`などの語は論理演算子(!, ||, &&)のヒントになる
 
-- 原因の推測: シーンファイルの保存タイミングとGit操作のタイミングがズレていた可能性
-- 確認したこと: .cs ファイルの中身(コード)は無事だった。消えていたのは
-  シーン上の「GameObjectへのアタッチ・Inspector設定」だけ
-- 教訓: コード(スクリプト)とシーン(配置)は別々に保存されるため、
-  Git操作の前後でズレることがある。作業の節目でシーンも保存する習慣が必要
+---
 
-### 復旧手順
-1. 空のGameObjectを作成、名前を InputManagerObj に変更
-2. InputManagerObj に InputManager.cs をアタッチ
-3. 別の空のGameObjectを作成、名前を Tester に変更
-4. Tester に InputManagerTester.cs をアタッチ
-5. Tester の Target Input Manager 欄に InputManagerObj をドラッグ&ドロップ
-
-これで前回と同じ状態(Subscribeの中身に到達、MoveCameraでNullReferenceException)まで再現できた。
-
-## OsawariCameraManager の役割(復習)
-
-InputManager内での使われ方から、以下の役割と判断:
-
-```csharp
-case MouseOn.None:
-    _isInOsawari.Value = true;
-    await MoveCamera(_tokenSource.Token);   // 何もない場所をクリックした時
-    break;
-```
-
-```csharp
-private async UniTask MoveCamera(CancellationToken token)
-{
-    CameraManager.SetMousePos(GetCurrentMousePosition());   // クリック時の位置を記録
-    while (_pressed)
-    {
-        await UniTask.Yield(token);
-        CameraManager.MoveCamera(GetCurrentMousePosition());  // 毎フレーム位置を送り続ける
-    }
-}
-```
-
-- 「クリックした瞬間の位置」を基準に「今のマウス位置」を毎フレーム送り続ける構造から、
-  ドラッグの動きに応じてカメラを動かす設計だと判断(ロジック面では確定、視覚的な動作は未確認)
-- マウスホイールでのズーム処理(CameraZoom)も担当している
-- 今回は「呼ばれることの確認」までを目的とし、実際に画面上でカメラが動くところまでは踏み込まない方針とした
-
-## CameraManager の null 問題を解決
-
-OsawariCameraManager は MonoBehaviour を継承していない普通のクラスのため、
-InspectorのCamera Manager欄にドラッグ&ドロップで設定することができない。
-
-### 対処: コードで直接インスタンスをセットする
-
-InputManagerTester.cs の Start() に1行追加:
-
-```csharp
-void Start()
-{
-    var mouseInput = new MouseInputProvider(null);
-    var stubTrigger = new StubInputTrigger();
-
-    TargetInputManager.CameraManager = new OsawariCameraManager();   // 追加した行
-    TargetInputManager.ManagedStart(null, mouseInput, stubTrigger);
-
-    Debug.Log("InputManager を初期化しました");
-}
-```
-
-## 結果: 今回の目的「クリックしたら動く処理」を達成)
-## namespace による本物とスタブの競合回避
+## namespace によるスタブと本物の競合回避
 
 - スタブは最初から `namespace Stubs { }` で囲んでおく(後から競合して直すと修正箇所が増えるため)
 - スタブを使うファイル側は `using Stubs;` を1行追加するだけで、Stubs名前空間の中身を全部使える
 - クラスが増えても `using Stubs;` は1行のまま(個別指定不要)
+- 実装したいクラスが増えたら、新しいインターフェースには新しいスタブクラスを作る。同じインターフェースの別メソッドを試したい場合は既存スタブを育てる
 
-## テストコード(MouseInputTester.cs)で確認できたこと
+---
 
-- `MonoBehaviour` ではない普通のクラス(`MouseInputProvider`)は `new` でその場で生成できる
-- `new MouseInputProvider(null)` のように `null` を渡してもエラーにならない → `IsUtageNotPlayingOrNull()` がnullチェックしているため(null安全設計)
-- `InputGrab()` は「マウスボタン押下」かつ「Utageが再生中でない」の両方が真の間だけ `true` を返す(毎フレーム再判定、スイッチのON/OFFではない)
-- `Is〜` から始まるメソッド/プロパティは基本的に `bool` を返す(命名規則)
-- パスカルケースの単語区切りで英文法通りに読むと、メソッド名から中身を予測できる
+## asmdef(アセンブリ定義)によるエラーのパターン
 
-## 解析・実験の進め方(今回得た教訓)
+「型が見つからない」エラーには2つの原因パターンがある。
 
-- 依存が少ない・末端のクラスから読み始める(`IInputProvider` → `MouseInputProvider` → `InputManager` → `OsawariManager` の順)
-- クラス全体・メソッド全体を網羅する必要はない。「今回の目的」を1つ決めて、それに関係する最短ルートだけを辿る
-- 目的の設定と道筋の提示はAIに頼ってよいが、実装・実行は自分の手で行うと理解が深まる
-- テストコードは基本的に消さず、他クラスの実験でも再利用する前提で残しておく
-- 解析対象の本物コード(`MouseInputProvider.cs`)にはデバッグコードを書き込まず、観察用の別ファイル(`MouseInputTester.cs`)から外側だけ呼び出して検証する
-
-## 次にやること(候補)
-- `InputManager` の依存マッピング(依存7個)
-- `InputManager` 用のスタブ作成(`OsawariCameraManager`, `CrossSectionManager` など)
-- 通常の push ではなく `--force` が必要(履歴が食い違っているため)
-   - 実行結果: `68805fe...6c4cb12 main -> main (forced update)`
-   - これで GitHub上の main も、今日までの実験内容に置き換わった
-
-6. GitHub Desktopで確認
-   - Current branch: main
-   - 「Pull 1 commit from the origin remote」の警告が消えている
-   - 0 changed files / No local changes
-   - → ローカルとGitHub、両方の main が完全に一致した状態になった
-
-### 今後の運用方針
-- main = 今日までの InputManager 実験を含む、最新の学習内容の基準
-- experiment-inputmanager ブランチも Branches 一覧には残っている(削除はしていない)
-- 13日前の初期状態は、mainの書き換えにより実質的に失われた(バックアップは取らない方針で合意済み)
-
-### 学んだGitコマンド一覧(今回のセッション全体)
-
-| コマンド | 意味 |
-|---|---|
-| `git reflog` | 操作履歴を全部表示する(読み取り専用、安全) |
-| `git branch [新名] [コミットID]` | 指定したコミットの位置に新しいブランチを作る |
-| `git checkout [ブランチ名]` | 指定したブランチに切り替える |
-| `git branch -f [ブランチ名] [別ブランチ名]` | 既存ブランチの位置を強制的に付け替える |
-| `git push origin [ブランチ名] --force` | リモート(GitHub)を強制的に上書きする |
-
-### 注意点(今後の自分へ)
-- `--force` は履歴を上書きする強い操作。他の人と共同作業している場合は特に注意が必要
-  (今回は一人での学習用リポジトリのため問題なし)
-- 作業前に Current branch が意図したブランチになっているか、必ず確認する習慣をつける
-MoveCamera が呼ばれた: (156.40, ...)
-MoveCamera が呼ばれた: (90.85, ...)
-NullReferenceException が解消され、MoveCameraが正常に呼ばれることを確認できた。
-マウスを押している間、座標が変化しながら連続でログが出ることも確認済み(想定通りの挙動)。
-
-## クリック処理の全体フロー(確認完了)
-クリック
-↓ ①検知(Unity標準のInput.GetMouseButtonDownで確認)
-InputGrab()
-↓ ②UniRxのwhere条件を通過(_raycasterチェックは検証後に元の仕様へ復元済み)
-Subscribeの中身
-↓ ③MouseOn判定 → None(何もない場所をクリック)
-MoveCamera()呼び出し
-↓ ④CameraManager.MoveCamera(座標) 呼び出し成功
-ログ出力: MoveCamera が呼ばれた: (座標)
-## Tips: VS Codeでのコード自動整形
-
-コピペ等でインデントが崩れた際は、以下のショートカットで自動整形できる。
-整形後は Ctrl+S での保存を忘れないこと。
-
-## 現状まとめ
-
-- InputManager の「クリックしたら動く処理(MouseOn.Noneのケース)」の検証が完了
-- _raycaster が null のため MouseOn.Osawari のケース(実際にOsawariに触れる処理)は未検証のまま
-- 実際に画面上でカメラが視覚的に動くところまでは未実装(必要になれば次回検討)
-
-## 次にやること(候補)
-- 本物の CubismRaycaster を用意して、MouseOn.Osawari のケースまで検証する(選択肢A、大掛かり)
-- 別のクラス(OsawariManager本体など)の学習に進む
-- 今回のスタブ・実験環境を土台に、別の処理を試す
-- # 学習ログ: 本物のLive2Dモデル導入(MouseOn.Osawariルート検証の準備)
-
-## 今回の目的
-InputManagerの「クリックしたら動く処理」はMouseOn.Noneルートで達成済み。
-残る MouseOn.Osawari ルート(実際にモデルに触れた時の処理)を検証するため、
-本物のLive2Dモデルと CubismRaycaster を実験用プロジェクトに導入する準備を進めた。
-
-## わかったこと
-
-### 実験用プロジェクトにLive2Dの本物のモデルは入っていなかった
-- Assets/Live2D/Cubism フォルダにあったのは「仕組み(SDK)」だけ
-- 「実際のキャラクターのモデルデータ」は別途用意する必要があった
-- 3Dモデル(SD_unitychan_humanoidなど)とLive2D(2D)モデルは別物。
-  CubismRaycasterは2D(Live2D)専用で3Dモデルには使えない
-
-### Live2Dモデルの導入手順
-1. Cubism Editorの出力データの中から `runtime` フォルダを探す
-   (.cmo3 は編集用プロジェクトファイルでUnityでは使わない)
-2. runtime フォルダの中身一式をコピー:
-   - [モデル名].moc3(モデル本体)
-   - [モデル名].model3.json(設定ファイル)
-   - [モデル名].physics3.json(物理演算設定)
-   - [モデル名].cdi3.json(パラメータ情報)
-   - [モデル名].2048/ (テクスチャフォルダ)
-   - motion/ (モーションフォルダ)
-3. Assets内の新しいフォルダ(例: Assets/Live2D/Models/[モデル名])に丸ごとコピー
-4. Unityが自動でPrefabやマテリアルを生成する
-5. 生成されたPrefabをHierarchyにドラッグ&ドロップしてシーンに配置
-
-実際に hiyori_free_t08 モデルの導入に成功した。
-
-### 見た目が粗く(ドット絵っぽく)見えた原因
-- テクスチャ解像度は十分高い(2048x2048)だが、Game画面上での表示サイズが小さすぎたため
-- 原因は Main Camera の Orthographic Size 設定だった
-  - 本物のプロジェクト(参考にした別プロジェクト): Size = 0.8
-  - 実験用プロジェクト: Size = 5前後(標準的なデフォルト値に近い、モデルが小さく表示される)
-- Orthographic Size は「カメラが画面に映す範囲の広さ」を表す設定
-  - 値が小さい = ズームインしたようにモデルが大きく見える
-  - 値が大きい = ズームアウトしたようにモデルが小さく見える
-- 対処: 実験用プロジェクトの Main Camera の Size を 0.8 に変更する(次回試す)
-
-### 待機モーションについて
-- デフォルトでは、モデルをシーンに置いただけでは待機モーションは自動再生されない
-- 自動再生されるには CubismMotionController 等のコンポーネントと、
-  起動時にモーション再生を指示するスクリプトが必要
-- Live2D Cubism SDKがインポート時に自動でコンポーネント一式を付与してくれることがある
-- 今回の目的(CubismRaycasterでの当たり判定検証)には待機モーションの動作は不要と判断、優先度低として保留
-
-## 優先順位の整理(今回の判断)
-
-| 項目 | 優先度 | 理由 |
+| パターン | 見分け方 | 対処法 |
 |---|---|---|
-| 待機モーションが自動再生されるか | 低 | 見た目の話で、当たり判定の検証には無関係 |
-| カメラサイズの調整 | 中 | 見た目の話だが、クリックのしやすさには関わる |
-| CubismRaycasterをモデルにアタッチし、InputManagerTesterから渡せるようにする | 高 | MouseOn.Osawariルート検証の本質的な作業 |
+| ゲーム独自クラスが存在しない | 実験用プロジェクトにそもそもファイルが無い | スタブを自作する |
+| 外部SDK/パッケージのアセンブリが参照されていない | ファイル(SDK本体)はプロジェクトに存在するのに「見つからない」と出る | 該当フォルダの`.asmdef`を選択→Inspectorの`Assembly Definition References`に追加する |
 
-## 次にやること
-1. hiyori_free_t08(または別モデル)に CubismRaycaster コンポーネントを Add Component で追加する
-2. InputManagerTester.cs で、そのモデルの CubismRaycaster を取得し、
-   ManagedStart(raycaster, mouseInput, stubTrigger) の第1引数に渡すよう修正する
-3. Main CameraのOrthographic Sizeを0.8程度に調整する(任意、見やすさのため)
-4. モデルをクリックしてみて、MouseOn が Osawari に変化するか確認する
+### 実例
+- Live2D: `Live2D.Cubism`(ランタイム用。`.Editor`はエディタ専用なので不要)を追加
+- UniRx: `UniRx`を追加
+- UniTask(Cysharp): 同様の手順で追加
 
-# 学習ログ: Live2Dモデル導入とCubismRaycaster検証(完了)
+### 見分け方のコツ
+- コンパイルログにSDK自体のファイルについてのwarning/errorが出ていれば、SDK自体はプロジェクトに認識されている証拠
+- それでも「型が見つからない」エラーが出続ける場合は、asmdefの参照不足を疑う
+- Projectウィンドウの検索窓に `t:asmdef` と入力すると、プロジェクト内の全asmdefファイルを一覧できる
+- `warning: Using obsolete custom response file 'mcs.rsp'...` は無関係な古い警告。errorではないので無視してよい
 
-## 今回の目的
-InputManagerの「MouseOn.Osawariルート」を検証するため、本物のLive2Dモデルを導入し、
-CubismRaycasterによる実際のクリック当たり判定を確認する。
+### 新しいエラーパターン: FindObjectOfType の型制約
+```
+error CS0311: The type 'X' cannot be used as type parameter 'T' in 'Object.FindObjectOfType<T>()'.
+There is no implicit reference conversion from 'X' to 'UnityEngine.Object'.
+```
+- `FindObjectOfType<T>()` は `UnityEngine.Object`(実質MonoBehaviour等)を継承した型しか扱えない
+- 対応: スタブクラスに `: MonoBehaviour` を追加し、`using UnityEngine;` も追加する
+- 注意: MonoBehaviour化すると `new` でインスタンス化できなくなる
 
-## 実施内容
+---
 
-### 1. 本物のLive2Dモデルの導入
-- hiyori_free_t08 モデルをAssets/Live2D/Models/hiyoriに配置
-- Live2D公式サンプルモデルを使用(以前入れた3Dモデル SD_unitychan は誤りと気づき削除)
+## MouseInputProvider の実験(完了)
 
-### 2. カメラサイズの調整(任意)
-- Main Camera の Orthographic Size を調整し、見やすい表示に変更
+### 依存関係
+| 依存先 | 型 | 注入方法 | 実験での対応 |
+|---|---|---|---|
+| _utage | UtageManager | コンストラクタ注入 | スタブ作成(MonoBehaviour化) |
+| Input | Unity標準 | 静的アクセス | そのまま動く |
+| SaveLoadManager.GlobalData | 静的プロパティ | 直接アクセス | スタブ自作が必要 |
 
-### 3. CubismRaycasterのアタッチと接続
-- hiyori_free_t08 に CubismRaycaster コンポーネントを追加
-- InputManagerTester.cs に public CubismRaycaster ModelRaycaster フィールドを追加し、
-  ManagedStart の第1引数に渡すよう修正
-
+### SaveLoadManager スタブ(ネストした静的プロパティの例)
 ```csharp
-public CubismRaycaster ModelRaycaster;
-
-void Start()
+namespace Stubs
 {
-    var mouseInput = new MouseInputProvider(null);
-    var stubTrigger = new StubInputTrigger();
+    public class SaveLoadManager
+    {
+        public static GlobalDataClass GlobalData = new GlobalDataClass();
+    }
 
-    TargetInputManager.CameraManager = new OsawariCameraManager();
-    TargetInputManager.ManagedStart(ModelRaycaster, mouseInput, stubTrigger);
+    public class GlobalDataClass
+    {
+        public GameOptionClass GameOption = new GameOptionClass();
+        public float GetMouseSensitivityFactor() { return 1f; }
+    }
 
-    Debug.Log("InputManager を初期化しました");
+    public class GameOptionClass
+    {
+        public int MouseButtonDecision = 0;
+        public int MouseButtonAuto = 1;
+        public int MouseButtonSpecial = 2;
+    }
 }
 ```
 
-- Inspector上で Model Raycaster 欄に hiyori_free_t08 をドラッグ&ドロップして接続
+### テストコード(MouseInputTester.cs)で確認できたこと
+- MonoBehaviourではない普通のクラスは `new` でその場で生成できる
+- `new MouseInputProvider(null)` のように `null` を渡してもエラーにならない → nullチェックしているため(null安全設計)
+- 実験の基本方針: クラスの全メソッドをテストする必要はなく、「主役のメソッド」「シンプルで結果がすぐ分かるもの」「今知りたい疑問に直結するもの」を優先して一部だけ検証すれば設計パターンは理解できる
 
-### 4. Raycastの動作確認
-IsMouseOnOsawariParts に一時的にログを追加して検証:
+---
 
+## InputManager の実験(完了、MouseOn.None / MouseOn.Osawari 両ルート到達)
+
+### 依存関係(15フィールド)
+
+| 依存先 | 型 | 対応方針 |
+|---|---|---|
+| _input | IInputProvider | 既存スタブ再利用 |
+| _raycaster | CubismRaycaster | asmdef参照で解決、後に本物のLive2Dモデルを導入して対応 |
+| _manager | IInputTrigger | StubInputTriggerとして実装 |
+| CameraManager | OsawariCameraManager | スタブ作成、コードで直接インスタンスをセット |
+| CsManager | CrossSectionManager | 空スタブ(Edge/VariableSizeObjectのケースでのみ使用のため) |
+| _utage | UtageManager | 既存スタブ再利用(MonoBehaviour化) |
+| _messageWindowUIPresenter | MessageWindowUIPresenter | スタブ作成(MonoBehaviour化) |
+| MouseOn(型) | enum | 新規作成 |
+| bool系, CompositeDisposable, CancellationTokenSource, BoolReactiveProperty | 標準/UniRx機能 | 対応不要 |
+
+### StubInputTrigger の実装
+```csharp
+using Live2D.Cubism.Core;
+using Live2D.Cubism.Framework.Raycasting;
+using Paidia.satsuki1;
+
+namespace Stubs
+{
+    public class StubInputTrigger : IInputTrigger
+    {
+        public void UpdateWhileClicked(CubismRaycastHit[] results, int hitCount, bool isFirst) { }
+        public void OnMouseUpTrigger() { }
+        public void OnAutoTrigger(CubismRaycastHit[] results, int hitCount) { }
+        public void OnInputSpecialTrigger(CubismRaycastHit[] results, int hitCount) { }
+        public bool IsClickingAtMesh(CubismRaycastHit[] results, int hitCount) => false;
+        public CubismRaycaster GetCubismRaycaster() => null;
+        public AbstractOsawari GetOsawariFromDrawable(CubismDrawable mesh)
+        {
+            return new AbstractOsawari();   // 最終的にnullからインスタンスを返す形に変更(Osawariルート到達のため)
+        }
+        public Scene GetScene() => null;
+    }
+}
+```
+- インターフェースを実装するクラスは全メンバーの実装が必須(1つでも欠けるとCS0535エラー)
+- 同じインターフェースから、目的に応じて複数の実装クラスを作れる(本物用のOsawariManager、実験用のStubInputTrigger)。これは依存性注入(DI)の恩恵
+
+### MouseOn (enum)
+```csharp
+namespace Stubs
+{
+    public enum MouseOn
+    {
+        None,
+        UI,
+        Edge,
+        VariableSizeObject,
+        Osawari
+    }
+}
+```
+
+### Scene スタブ
+```csharp
+using UniRx;
+
+namespace Stubs
+{
+    public class Scene
+    {
+        public BoolReactiveProperty IsModalWindowOpen = new BoolReactiveProperty(false);
+        public BoolReactiveProperty IsResultWindowOpen = new BoolReactiveProperty(false);
+    }
+}
+```
+- `.Value`でアクセスされている型はReactiveProperty系と推測できる
+- GetScene()がnullを返すスタブにしておけば、_anyModalOpenの判定処理自体がほぼスキップされる
+
+### AbstractOsawari スタブ(最終形、Osawariルート到達版)
+```csharp
+using Live2D.Cubism.Core;
+
+namespace Stubs
+{
+    public class AbstractOsawari
+    {
+        public bool GetConstraints()
+        {
+            return true;   // MouseOn.None検証時はfalse、Osawariルート到達のためtrueに変更
+        }
+
+        public bool CanTouchMesh(CubismDrawable mesh)
+        {
+            return true;   // 同上
+        }
+    }
+}
+```
+
+### OsawariCameraManager スタブ
+```csharp
+namespace Stubs
+{
+    public class OsawariCameraManager
+    {
+        public void CameraZoom(bool zoomIn) { }
+        public void SetMousePos(UnityEngine.Vector3 pos) { }
+        public void MoveCamera(UnityEngine.Vector3 pos)
+        {
+            UnityEngine.Debug.Log("MoveCamera が呼ばれた: " + pos);
+        }
+    }
+}
+```
+- MonoBehaviourを継承していない普通のクラスのため、InspectorのCamera Manager欄にドラッグ&ドロップで設定できない
+- 対処: InputManagerTester.cs の Start() でコードから直接インスタンスをセットする
+```csharp
+TargetInputManager.CameraManager = new OsawariCameraManager();
+```
+
+### InputManagerTester.cs(完成形)
+```csharp
+using UnityEngine;
+using Paidia.satsuki1;
+using Stubs;
+using Live2D.Cubism.Framework.Raycasting;
+
+public class InputManagerTester : MonoBehaviour
+{
+    public InputManager TargetInputManager;
+    public CubismRaycaster ModelRaycaster;
+
+    void Start()
+    {
+        var mouseInput = new MouseInputProvider(null);
+        var stubTrigger = new StubInputTrigger();
+
+        TargetInputManager.CameraManager = new OsawariCameraManager();
+        TargetInputManager.ManagedStart(ModelRaycaster, mouseInput, stubTrigger);
+
+        Debug.Log("InputManager を初期化しました");
+    }
+
+    void Update()
+    {
+        if (Input.GetMouseButtonDown(0))
+        {
+            Debug.Log("マウスクリック検知(Unity標準)");
+        }
+        Debug.Log("MouseOn: " + TargetInputManager.MouseOn);
+    }
+}
+```
+
+### _raycaster が必須条件だった発見
+```csharp
+where _raycaster != null && null != Camera.main
+```
+- ManagedStartの第1引数(raycaster)にnullを渡していると、この条件で毎回弾かれ、Subscribeの中身に一切到達しない
+- これは仕様(安全装置)であり、バグではない。CubismRaycasterはLive2Dモデルとの連携が前提の機能
+- 検証時は一時的にコメントアウトして原因を切り分け、検証後は元の条件に戻す運用が有効
+```csharp
+where _raycaster != null && null != Camera.main
+//where null != Camera.main //テスト用
+```
+
+### 本物のLive2Dモデルの導入手順
+1. Cubism Editorの出力データの中から `runtime` フォルダを探す(.cmo3は編集用でUnityでは使わない)
+2. runtime フォルダの中身一式をコピー: [モデル名].moc3 / .model3.json / .physics3.json / .cdi3.json / [モデル名].2048フォルダ(テクスチャ) / motionフォルダ
+3. Assets内の新しいフォルダにコピー(例: Assets/Live2D/Models/[モデル名])
+4. Unityが自動でPrefabやマテリアルを生成する
+5. 生成されたPrefabをHierarchyにドラッグ&ドロップしてシーンに配置
+6. モデルにCubismRaycasterコンポーネントをAdd Componentで追加
+7. InputManagerTesterのModel Raycaster欄にモデルをドラッグ&ドロップ
+
+- 3DモデルとLive2D(2D)モデルは別物。CubismRaycasterは2D専用で3Dモデルには使えない(混同して3Dモデルを一度誤って導入した経緯あり)
+- モデルが小さく粗く見える原因は主にMain CameraのOrthographic Size設定(値が小さいほどズームインして大きく見える。本物のプロジェクト参考値は0.8)
+- 待機モーションの自動再生は今回未対応(CubismRaycasterでの当たり判定検証には不要と判断、優先度低)
+
+### Raycastの動作確認(検証用の一時ログ)
 ```csharp
 int hitCount = _raycaster.Raycast(ray, array);
 Debug.Log("Raycastヒット数: " + hitCount);
 ```
-
 結果:
-Raycastヒット数: 0 (モデルの外をクリックした時)
-Raycastヒット数: 1 (モデルに当たった時、成功)
-
-**本物のLive2Dモデルに対して、CubismRaycasterが正しく当たり判定を検出できることを実証できた。**
-
-## 今回の目標は達成、MouseOn.Osawariには未到達(意図的)
-
-Raycastは成功しているが、MouseOnは終始 None のままだった。理由:
-
-```csharp
-// StubInputTrigger.cs
-public AbstractOsawari GetOsawariFromDrawable(CubismDrawable mesh) => null;
+```
+Raycastヒット数: 0   (モデルの外をクリックした時)
+Raycastヒット数: 1   (モデルに当たった時、成功)
 ```
 
-IsMouseOnOsawariParts が true になるには「Raycastが当たる」だけでなく
-「GetOsawariFromDrawable が null 以外を返す」必要があるため、これは想定通りの挙動。
+### MouseOn.Osawari 到達までの3つの関門
+```csharp
+AbstractOsawari osawariFromDrawable = _manager.GetOsawariFromDrawable(cubismRaycastHit.Drawable);
+if (null != osawariFromDrawable && osawariFromDrawable.GetConstraints() && osawariFromDrawable.CanTouchMesh(cubismRaycastHit.Drawable))
+{
+    return true;
+}
+```
+| 条件 | 修正前 | 修正後 |
+|---|---|---|
+| null != osawariFromDrawable | null固定 → false | インスタンスを返す → true |
+| GetConstraints() | false固定 | true固定 |
+| CanTouchMesh(...) | false固定 | true固定 |
 
-技術的には、StubInputTrigger.GetOsawariFromDrawable の返り値を null から
-何らかのAbstractOsawariインスタンスに育てれば、MouseOn.Osawariまで到達させることは可能
-(Drawableの検出自体はすでにできているため)。
+この実験で実証できたこと: InputManagerの「Osawariかどうか判定する仕組み」自体は、AbstractOsawariの中身の複雑さとは無関係に、型と戻り値さえ揃っていれば動く。「スタブは型さえ合えば動く」という原則の集大成的な確認。
 
-## 今回の判断: MouseOn.Osawariへの到達は行わず、ここで一区切り
+### InputManager実験、最終結果(完走)
 
-- Raycastによる当たり判定の実証(今回の目的)は達成済み
-- MouseOn.Osawariまで進めるかは目的次第と判断し、今回は見送り
-- 必要になれば次回、StubInputTriggerの拡張から再開できる状態
+| ルート | 内容 | 状態 |
+|---|---|---|
+| MouseOn.None | 何もない場所をクリック→カメラ移動(MoveCamera) | 完了 |
+| MouseOn.Osawari | Live2Dモデルをクリック→触る処理の入り口 | 完了 |
 
-## 設計思想についての気づき: UniRxのsourceを分離する理由
+クリック処理の全体フロー:
+```
+クリック
+  ↓ ①検知(Unity標準のInput.GetMouseButtonDownで確認)
+InputGrab()
+  ↓ ②UniRxのwhere条件を通過(_raycasterチェックは本物のCubismRaycasterで解決)
+Subscribeの中身
+  ↓ ③MouseOn判定(None または Osawari)
+  ↓-a MouseOn.None: MoveCamera()呼び出し → CameraManager.MoveCamera(座標)
+  ↓-b MouseOn.Osawari: Raycast成功→GetOsawariFromDrawableがインスタンス返却→GetConstraints/CanTouchMeshがtrue
+```
 
-InputManager.SetUpRx() 内で、なぜ以下のように source2 という中間変数に
-分けているのか考察した:
+---
 
+## Osawariシステムの設計思想についての気づき
+
+### UniRxのsourceを分離する理由(可読性・保守性)
 ```csharp
 IObservable<long> source2 = from _ in Observable.EveryGameObjectUpdate()
     where _input.InputGrab() && !_pressed
@@ -343,35 +358,136 @@ IObservable<long> source2 = from _ in Observable.EveryGameObjectUpdate()
     where _raycaster != null && null != Camera.main
     select new { ... }).Subscribe(async x => { ... });
 ```
-
 技術的には1つのwhere群にまとめることも可能だが、あえて分離されている理由:
-
 - source2 = 「クリックが発生したという、生の入力イベント」
 - その後のwhere群 = 「そのクリックを、今のゲーム状態的に受け付けていいかの判定」
-- 役割の異なる条件を分けることで、可読性・保守性が上がる
-- 変数名(source2)が「見出し」の役割を果たし、全部読まなくても大まかな構造を把握できる
+- 役割の異なる条件を分けることで可読性・保守性が上がる。変数名が「見出し」の役割を果たす
 - デバッグ時も、どの段階で処理が止まっているか切り分けやすくなる
-  (実際に今回「Subscribeの中身に到達した」ログで、この構造の恩恵を体感した)
 
-## UniRxの実行タイミングの整理
+### UniRxの実行タイミングの整理
+- SetUpRx()自体はManagedStartから1回だけ呼ばれる「組み立てフェーズ」
+- Subscribe(async x => {...})の中身は、クリックが発生するたびに何度でも実行される
+- `_pressedMouseOn = _mouseOn;` はSubscribe内にあるため、クリックのたびに現在のMouseOn値を記録している
 
-- SetUpRx() 自体は ManagedStart から1回だけ呼ばれる「組み立てフェーズ」
-- Subscribe(async x => {...}) の中身は、クリックが発生するたびに何度でも実行される
-- _pressedMouseOn = _mouseOn; は Subscribe内にあるため、クリックのたびに現在のMouseOn値を記録している
+### プロパティの評価タイミング
+- MouseOnはプロパティであり、「呼ばれる」というより「読まれる(アクセスされる)たびに、getの中身が実行される」
+- 本物のゲームでは、クリックされた瞬間に1回だけMouseOnを読み取り、switch文で処理を振り分けている(無駄のない設計)
+- MouseOn自体は「状態を調べるだけ」で何も変更しない。switch文も「調べた結果で分岐するだけ」。実際の状態変更はswitchの中で呼ばれる別メソッド(MoveCameraなど)が担う
 
-## プロパティの評価タイミングについて
+### ロジックを外部クラスに委任する設計パターン
+```csharp
+[NonSerialized]
+public bool IsMouseOnUI;
+[NonSerialized]
+public bool IsMouseOnVariableSize;
+[NonSerialized]
+public bool IsMouseOnEdgeOfVariableSize;
+```
+- これらはInputManager自身が計算せず、外部の専門クラス(UI担当、リサイズ担当など)が毎フレーム書き込みに来る想定の「�ല示板」
+- 対照的にIsMouseOnOsawariPartsはInputManager自身がロジック(Raycast)を持つ。マウス入力とLive2Dモデルの当たり判定は入力処理の中枢にとって本質的な仕事だから
+- 設計パターン名: 関心の分離(Separation of Concerns)、単一責任の原則(Single Responsibility Principle)、疎結合(Loose Coupling)
+- public: 外部クラスから直接書き込めるようにするため
+- [NonSerialized]: 毎フレーム上書きされる一時的な値であり、保存・Inspector表示する意味がないため
+- メリット: 変更に強くなる(UI判定方法が変わってもInputManagerは無変更で済む)、テストしやすくなる(boolを直接セットするだけで状況を作れる、今回のスタブ実験がまさにこれ)
 
-- MouseOn はプロパティであり、「呼ばれる」というより「読まれる(アクセスされる)たびに、get の中身が実行される」
-- 本物のゲームでは、クリックされた瞬間に1回だけ MouseOn を読み取り、switch文で処理を振り分けている
-  (今回のテストコードのようにUpdate内で毎フレーム読む使い方とは異なる、より無駄のない設計)
+---
 
-## MainThreadDispatcherについて
+## Git操作の記録
 
+### Detached HEAD の罠と復旧方法(実体験)
+
+#### 何が起きたか
+GitHub Desktopで「main」ブランチに切り替えたところ、直前にコミットしていた実験内容がHistoryタブから見えなくなった。原因は、そのコミットが「Detached HEAD」(どのブランチにも属さない孤立した状態)で行われていたため。ブランチを切り替えた瞬間に「行き場を失う」。
+
+#### 教訓
+- 作業を始める前に、必ずGitHub Desktop上部の「Current branch」が意図したブランチ(通常はmain)になっているか確認する習慣をつける
+- Detached HEAD状態でも、コミットしていればデータ自体は消えない(見えなくなるだけで、Gitの中には残っている)
+
+#### 復旧手順
+1. コマンドプロンプトでプロジェクトフォルダに移動: `cd [プロジェクトパス]`
+2. 操作履歴を確認(読み取り専用、安全な操作): `git reflog`
+3. 目的のコミットIDを見つける
+4. そのコミットから新しいブランチを作る: `git branch [新しいブランチ名] [コミットID]`
+5. 作成したブランチに切り替える: `git checkout [新しいブランチ名]`
+6. Unityで「シーンが外部で変更されました」ダイアログが出たらReloadを押す
+
+#### GitHub DesktopとGit(コマンド)の関係
+- GitHub Desktopは、Git本体を操作するための道具(GUIアプリ)。裏側は同じGitが動いている
+- reflog、branch -f、push --forceのような踏み込んだ操作は、GitHub Desktopのボタンには用意されていない(あえて危険な操作を表に出さない設計)
+- History(GitHub Desktop) = 「今立っている道路から見える景色」(現在のブランチから辿れるコミットのみ表示)
+- reflog = 「今まで歩いた全ての足跡が記録された行動履歴」(ブランチに接続されているか関係なく全操作を記録)
+
+### experiment ブランチを main に統合した記録
+
+#### 目的
+古い初期状態(main)よりも実験内容(experiment-inputmanager)の方を今後の基準にしたいと判断。13日前の状態はバックアップ不要と判断し、mainの中身を置き換えた。
+
+#### 実施手順
+1. 現在のブランチがexperiment-inputmanagerであることを確認
+2. mainのラベル位置を強制的に付け替える: `git branch -f main experiment-inputmanager`
+3. mainブランチに切り替える: `git checkout main`
+4. ローカルとorigin/mainの食い違い警告が出る(Pullは押さない、混ざる危険があるため)
+5. GitHub上のmainを強制的に上書き: `git push origin main --force`
+6. GitHub Desktopで確認: Pull警告が消え、0 changed files / No local changesになれば完了
+
+#### 学んだGitコマンド一覧
+| コマンド | 意味 |
+|---|---|
+| `git reflog` | 操作履歴を全部表示する(読み取り専用、安全) |
+| `git branch [新名] [コミットID]` | 指定したコミットの位置に新しいブランチを作る |
+| `git checkout [ブランチ名]` | 指定したブランチに切り替える |
+| `git branch -f [ブランチ名] [別ブランチ名]` | 既存ブランチの位置を強制的に付け替える |
+| `git push origin [ブランチ名] --force` | リモート(GitHub)を強制的に上書きする |
+
+#### 注意点
+- `--force`は履歴を上書きする強い操作。共同作業では特に注意(今回は一人での学習用リポジトリのため問題なし)
+- 作業前にCurrent branchが意図したブランチになっているか、必ず確認する習慣をつける
+
+### シーンとコードの保存タイミングのズレに関するトラブル
+- Git操作(ブランチ切り替え)の前後で、シーンファイル(.unity)上の配置(GameObjectへのアタッチ、Inspector設定)が意図せず巻き戻ることがあった
+- 原因の推測: シーンファイルの保存タイミングとGit操作のタイミングがズレていた
+- コード(.csファイル)自体は無事で、消えていたのはシーン上の配置のみだった
+- 教訓: コード(スクリプト)とシーン(配置)は別々に保存されるため、Git操作の前後でズレることがある。作業の節目でシーンも保存する習慣が必要
+
+---
+
+## Tips集
+
+### VS Codeでのコード自動整形
+```
+Shift + Alt + F   (Windows)
+Shift + Option + F  (Mac)
+```
+整形後はCtrl+Sでの保存を忘れないこと。
+
+### Unityの検索フィルタ `t:`
+`t:`は「type(タイプ、種類)」の略。ファイルの種類でピンポイントに絞り込める。
+| 検索 | 意味 |
+|---|---|
+| `t:Script` | C#スクリプトファイルだけ検索 |
+| `t:Prefab` | プレハブだけ検索 |
+| `t:Model` | 3Dモデル・キャラクターモデルだけ検索 |
+| `t:asmdef` | アセンブリ定義ファイルだけ検索 |
+
+### MainThreadDispatcherについて
 - UniRxのObservable機能が最初に使われたタイミングで、自動的に1回だけ生成される常駐オブジェクト
 - DontDestroyOnLoadに配置され、ゲーム終了までシーンをまたいで生き続ける
 - 毎フレーム、登録されている全てのObservableに「Updateが来た」という通知を配る「配達員」の役割
 - EveryGameObjectUpdate()が呼ばれるたびに新しく生成されるわけではない
 
+### 発音・読み方メモ
+- glossary(グロッサリー): 用語集
+- Docs(ドックス): 資料フォルダ
+- study(スタディ): 学習・研究
+- Experiment(エクスペリメント): 実験
+- IsUtageNotPlayingOrNull(イズ・ウタゲ・ノット・プレイング・オア・ヌル): 宴が再生中でない、またはnullかどうか
+
+---
+
 ## 次にやること(候補)
-- 別のクラス(OsawariManager本体など)の学習に進む
-- 必要になれば、StubInputTrigger.GetOsawariFromDrawable を拡張してMouseOn.Osawariルートまで検証する
+
+- OsawariManager(本物の司令塔、依存20個以上、正規ルートだが規模が大きい)に進む
+- AbstractOsawariのサブクラス群(OsawariHead、OsawariHipなど)を読む
+- 今回学んだ設計パターンを、OsawariEventやEventConditionなど別クラスに当てはめて復習する
+- CrossSectionManager等、今回空スタブのままにした依存の本格的な検証(MouseOn.Edge / VariableSizeObjectルート)
+- 別テーマ(Live2Dの表情システムなど)に切り替える
