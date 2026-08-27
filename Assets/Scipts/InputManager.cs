@@ -83,20 +83,22 @@ public class InputManager : MonoBehaviour
 	}
 
 	private bool _anyModalOpen
-	{
-		get
-		{
-			if (_manager.GetScene() != null)
-			{
-				if (!_manager.GetScene().IsModalWindowOpen.Value && !_manager.GetScene().IsResultWindowOpen.Value)
-				{
-					return _messageWindowUIPresenter.ShowingMessage;
-				}
-				return true;
-			}
-			return false;
-		}
-	}
+{
+    get
+    {
+    
+
+        if (_manager.GetScene() != null)
+        {
+            if (!_manager.GetScene().IsModalWindowOpen.Value && !_manager.GetScene().IsResultWindowOpen.Value)
+            {
+                return _messageWindowUIPresenter.ShowingMessage;
+            }
+            return true;
+        }
+        return false;
+    }
+}
 
 	public IReadOnlyReactiveProperty<bool> IsInOsawari => _isInOsawari;
 
@@ -157,6 +159,7 @@ public class InputManager : MonoBehaviour
 		IsMouseOnUI = false;
 		_utage = UnityEngine.Object.FindObjectOfType<UtageManager>();
 		_messageWindowUIPresenter = UnityEngine.Object.FindObjectOfType<MessageWindowUIPresenter>();
+		
 		SetUpRx();
 	}
 

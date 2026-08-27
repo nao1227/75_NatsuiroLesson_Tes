@@ -6,12 +6,17 @@ public class InputManagerTester : MonoBehaviour
 {
     public InputManager TargetInputManager;
     public CubismRaycaster ModelRaycaster;
+    public OsawariManager TargetOsawariManager;   // ← 追加
     void Start()
     {
         var mouseInput = new MouseInputProvider(null);
-        var stubTrigger = new StubInputTrigger();
+        TargetOsawariManager.HandManager = new Stubs.HandManager();
+        TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
+        
+        
         TargetInputManager.CameraManager = new OsawariCameraManager();
-        TargetInputManager.ManagedStart(ModelRaycaster, mouseInput, stubTrigger);
+        Stubs.SingletonManager<Stubs.SceneContextManager>.Instance.AllowOsawari = true;
+        TargetInputManager.ManagedStart(ModelRaycaster, mouseInput, TargetOsawariManager);
 
         Debug.Log("InputManager を初期化しました");
     }
@@ -20,7 +25,7 @@ public class InputManagerTester : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(0))
         {
-            Debug.Log("マウスクリック検知(Unity標準)");
+            // Debug.Log("マウスクリック検知(Unity標準)");
         }
         Debug.Log("MouseOn: " + TargetInputManager.MouseOn);
     }

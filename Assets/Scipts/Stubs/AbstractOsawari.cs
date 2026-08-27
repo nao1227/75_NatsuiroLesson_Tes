@@ -24,7 +24,10 @@ namespace Stubs
         public void ManagedUpdate() { }
         public void ManagedUpdateWhileNotActive() { }
         public void ManagedLateUpdate() { }
-        public void OnClick(CubismDrawable mesh, bool isFirst) { }
+        public void OnClick(CubismDrawable mesh, bool isFirst)
+        {
+            UnityEngine.Debug.Log("OnClick が呼ばれた! isFirst=" + isFirst);
+        }
         public void OnMouseUp() { }
         public void OnSpecial() { }
         public void SetAuto() { }

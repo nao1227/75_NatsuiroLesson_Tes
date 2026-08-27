@@ -334,11 +334,14 @@ public class OsawariManager : MonoBehaviour, IInputTrigger
 
 	public void UpdateWhileClicked(CubismRaycastHit[] results, int hitCount, bool isFirst)
 	{
+		Debug.Log("HandManager は null か: " + (HandManager == null));
+		Debug.Log("AllowOsawari は: " + SingletonManager<SceneContextManager>.Instance.AllowOsawari);
 		if (!SingletonManager<SceneContextManager>.Instance.AllowOsawari)
 		{
 			return;
 		}
 		int num = -1;
+		
 		if (isFirst)
 		{
 			targetMesh = null;

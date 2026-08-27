@@ -5,9 +5,15 @@ namespace Stubs
 {
     public class ContextOsawariTargetList : IEnumerable<List<AbstractOsawari>>
     {
+        private List<AbstractOsawari> _registeredTargets = new List<AbstractOsawari>();
+
+           public void RegisterTargets(List<AbstractOsawari> targets)
+    {
+        _registeredTargets = targets;
+    }
         public List<AbstractOsawari> GetOsawariTargets(OsawariContext context)
         {
-            return new List<AbstractOsawari>();
+            return _registeredTargets;
         }
 
         public IEnumerator<List<AbstractOsawari>> GetEnumerator()
