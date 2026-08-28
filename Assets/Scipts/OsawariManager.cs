@@ -367,6 +367,7 @@ public class OsawariManager : MonoBehaviour, IInputTrigger
 		{
 			Cursor.visible = false;
 			Cursor.lockState = CursorLockMode.Confined;
+			Debug.Log("クリック処理テスト");
 			_targetOsawari.OnClick(targetMesh, isFirst);
 		}
 	}

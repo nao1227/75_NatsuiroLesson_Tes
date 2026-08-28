@@ -1,3 +1,4 @@
+/*
 using Live2D.Cubism.Core;
 using Live2D.Cubism.Framework.Raycasting;
 using Paidia.satsuki1;
@@ -12,10 +13,12 @@ namespace Stubs
         public void OnInputSpecialTrigger(CubismRaycastHit[] results, int hitCount) { }
         public bool IsClickingAtMesh(CubismRaycastHit[] results, int hitCount) => false;
         public CubismRaycaster GetCubismRaycaster() => null;
+        public AbstractOsawari RegisteredOsawari;
         public AbstractOsawari GetOsawariFromDrawable(CubismDrawable mesh)
         {
-            return new AbstractOsawari();
+            return RegisteredOsawari;
         }
         public Scene GetScene() => null;
     }
 }
+*/
