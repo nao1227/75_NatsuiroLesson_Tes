@@ -17,6 +17,11 @@ public class OsawariEvent : UnityEngine.MonoBehaviour
         return UniTask.CompletedTask;
     }
 
+    public virtual void Cancel()
+    {
+        IsInvoked = false;
+    }
+
     public Cysharp.Threading.Tasks.UniTask Initialize(AbstractOsawari parent)
     {
         return Cysharp.Threading.Tasks.UniTask.CompletedTask;

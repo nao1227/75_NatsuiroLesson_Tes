@@ -20,19 +20,16 @@ public class OsawariManagerTester : MonoBehaviour
     // Debug.Log("GetCubismRaycaster() 呼び出し成功");
 
     // モデルからDrawable(パーツ)を全部取得する
+// モデルからDrawable(パーツ)を全部取得する
 var drawables = TargetOsawariManager.Model.Drawables;
 
-// ダミーのAbstractOsawariを作り、1つ目のDrawableを「触れる対象」として登録
-var dummyOsawari = new Stubs.AbstractOsawari();
-foreach (var drawable in drawables)
-{
-    dummyOsawari.TouchableMeshs.Add(drawable);
-}
-Debug.Log(dummyOsawari.TouchableMeshs.Count + "個の全メッシュを登録しました");
-Debug.Log(dummyOsawari.TouchableMeshs.Count + "個のメッシュを触れる対象として登録しました");
+// 本物のOsawariHeadを取得(あらかじめGameObjectにアタッチしておく)
+var osawariHead = TargetOsawariManager.GetComponent<OsawariHead>();
+osawariHead.TouchableMeshs = drawables;
+Debug.Log(osawariHead.TouchableMeshs.Length + "個の全メッシュを登録しました");
 
-// ContextOsawariTargets に、このダミーを登録する
-var targetList = new System.Collections.Generic.List<Stubs.AbstractOsawari> { dummyOsawari };
+// ContextOsawariTargets に、OsawariHeadを登録する
+var targetList = new System.Collections.Generic.List<AbstractOsawari> { osawariHead };
 TargetOsawariManager.ContextOsawariTargets = new Stubs.ContextOsawariTargetList();
 TargetOsawariManager.ContextOsawariTargets.RegisterTargets(targetList);
     }
