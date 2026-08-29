@@ -9,6 +9,7 @@ namespace Stubs
         public FeelingsClass Feelings = new FeelingsClass();
         public bool IsStimulusDecreasable;
         public void CopyValues(TemporaryStatus status) { }
+        public void AddExciteValue(int value) { }
     }
 
     public class FeelingsClass
@@ -21,6 +22,7 @@ namespace Stubs
         {
             return Cysharp.Threading.Tasks.UniTask.CompletedTask;
         }
+        public void AddAtomosphere(int value) { }
     }
 
     public enum ClothName
@@ -102,13 +104,24 @@ namespace Stubs
         public void SwitchContext() { }
     }
 
-  public class ParameterValue
-{
-    public float Value;
-    public ParameterValue(object parameter) { }
-    public static ParameterValue operator +(ParameterValue p, float v) { p.Value += v; return p; }
-    public static ParameterValue operator -(ParameterValue p, float v) { p.Value -= v; return p; }
-}
+    public class ParameterValue
+    {
+        public float Value;
+        public ParameterValue(object parameter) { }
+        public static ParameterValue operator +(ParameterValue p, float v) { p.Value += v; return p; }
+        public static ParameterValue operator -(ParameterValue p, float v) { p.Value -= v; return p; }
+
+        public ParameterValue Update(float value)
+        {
+            Value = value;
+            return this;
+        }
+
+        public bool IsAlmostZero()
+        {
+            return UnityEngine.Mathf.Abs(Value) < 0.01f;
+        }
+    }
 
     public class OsawariResult
     {

@@ -81,7 +81,7 @@ namespace Stubs
     }
     public interface IParticularHand
     {
-        ParticularHandStub GetParticularHand();
+        Hand GetParticularHand();
     }
     public class ParticularHandStub
     {

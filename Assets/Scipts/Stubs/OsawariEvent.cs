@@ -1,18 +1,24 @@
 using Cysharp.Threading.Tasks;
+using Stubs;
 
-namespace Stubs
+public class OsawariEvent : UnityEngine.MonoBehaviour
 {
-    public class OsawariEvent : UnityEngine.MonoBehaviour
-    {
-        public virtual bool IsFullfillCondition(TemporaryStatus status, OsawariConditions conditions)
-        {
-            return true;
-        }
+    public bool IsInvoked;
 
-        public virtual UniTask InvokeEvent(TemporaryStatus status, OsawariConditions conditions)
-        {
-            UnityEngine.Debug.Log("OsawariEvent の InvokeEvent が呼ばれた!");
-            return UniTask.CompletedTask;
-        }
+    public virtual bool IsFullfillCondition(TemporaryStatus status, OsawariConditions conditions)
+    {
+        return true;
+    }
+
+    public virtual UniTask InvokeEvent(TemporaryStatus status, OsawariConditions conditions)
+    {
+        UnityEngine.Debug.Log("OsawariEvent の InvokeEvent が呼ばれた!");
+        IsInvoked = true;
+        return UniTask.CompletedTask;
+    }
+
+    public Cysharp.Threading.Tasks.UniTask Initialize(AbstractOsawari parent)
+    {
+        return Cysharp.Threading.Tasks.UniTask.CompletedTask;
     }
 }

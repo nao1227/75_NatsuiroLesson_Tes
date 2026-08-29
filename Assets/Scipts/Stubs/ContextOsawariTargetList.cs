@@ -3,20 +3,21 @@ using System.Collections.Generic;
 
 namespace Stubs
 {
-    public class ContextOsawariTargetList : IEnumerable<List<AbstractOsawari>>
+    public class ContextOsawariTargetList : IEnumerable<List<global::AbstractOsawari>>
     {
-        private List<AbstractOsawari> _registeredTargets = new List<AbstractOsawari>();
+        private List<global::AbstractOsawari> _registeredTargets = new List<global::AbstractOsawari>();
 
-           public void RegisterTargets(List<AbstractOsawari> targets)
-    {
-        _registeredTargets = targets;
-    }
-        public List<AbstractOsawari> GetOsawariTargets(OsawariContext context)
+        public void RegisterTargets(List<global::AbstractOsawari> targets)
+        {
+            _registeredTargets = targets;
+        }
+
+        public List<global::AbstractOsawari> GetOsawariTargets(OsawariContext context)
         {
             return _registeredTargets;
         }
 
-        public IEnumerator<List<AbstractOsawari>> GetEnumerator()
+        public IEnumerator<List<global::AbstractOsawari>> GetEnumerator()
         {
             yield break;
         }
@@ -25,9 +26,10 @@ namespace Stubs
         {
             return GetEnumerator();
         }
-        public System.Collections.Generic.List<System.Collections.Generic.List<AbstractOsawari>> GetOsawariTargetsOfNotInContext(OsawariContext context)
+
+        public List<List<global::AbstractOsawari>> GetOsawariTargetsOfNotInContext(OsawariContext context)
         {
-            return new System.Collections.Generic.List<System.Collections.Generic.List<AbstractOsawari>>();
+            return new List<List<global::AbstractOsawari>>();
         }
     }
 }

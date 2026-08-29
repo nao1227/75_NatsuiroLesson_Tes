@@ -17,9 +17,10 @@ namespace Stubs
     public class Hand
     {
         public HandType HandType;
+        public bool IsGrabbing;   // ← この行を追加
     }
 
-  
+
 
     public class ParameterDictionary
     {
