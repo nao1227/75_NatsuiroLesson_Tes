@@ -10,37 +10,39 @@ public class OsawariManagerTester : MonoBehaviour
     {
         Debug.Log("=== OsawariManager 検証開始 ===");
 
-    TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
-    TargetOsawariManager.Scene = new Stubs.HScene();   // ← この1行を追加
+        TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
+        TargetOsawariManager.Scene = new Stubs.HScene();
 
-    var scene = TargetOsawariManager.GetScene();
-    // Debug.Log("GetScene() 呼び出し成功: " + (scene != null));
+        // ← 追加: HandManagerが未セットならここで作る(保険)
+        TargetOsawariManager.HandManager ??= new Stubs.HandManager();
 
-    var raycaster = TargetOsawariManager.GetCubismRaycaster();
-    // Debug.Log("GetCubismRaycaster() 呼び出し成功");
+        var scene = TargetOsawariManager.GetScene();
+        var raycaster = TargetOsawariManager.GetCubismRaycaster();
 
-    // モデルからDrawable(パーツ)を全部取得する
-// モデルからDrawable(パーツ)を全部取得する
-var drawables = TargetOsawariManager.Model.Drawables;
+        // モデルからDrawable(パーツ)を全部取得する
+        var drawables = TargetOsawariManager.Model.Drawables;
 
-// 本物のOsawariHeadを取得(あらかじめGameObjectにアタッチしておく)
-var osawariHead = TargetOsawariManager.GetComponent<OsawariHead>();
-osawariHead.TouchableMeshs = drawables;
-Debug.Log(osawariHead.TouchableMeshs.Length + "個の全メッシュを登録しました");
+        // 本物のOsawariHeadを取得(あらかじめGameObjectにアタッチしておく)
+        var osawariHead = TargetOsawariManager.GetComponent<OsawariHead>();
 
-// ContextOsawariTargets に、OsawariHeadを登録する
-var targetList = new System.Collections.Generic.List<AbstractOsawari> { osawariHead };
-TargetOsawariManager.ContextOsawariTargets = new Stubs.ContextOsawariTargetList();
-TargetOsawariManager.ContextOsawariTargets.RegisterTargets(targetList);
+        // ContextOsawariTargets に、OsawariHeadを登録する
+        var targetList = new System.Collections.Generic.List<AbstractOsawari> { osawariHead };
+        TargetOsawariManager.ContextOsawariTargets = new Stubs.ContextOsawariTargetList();
+        TargetOsawariManager.ContextOsawariTargets.RegisterTargets(targetList);
+
+        // ← 追加: ここでManagedStart()を呼ぶ(これが今回追加したかった1行)
+        osawariHead.ManagedStart(TargetOsawariManager, System.Threading.CancellationToken.None);
+
+        // ← 移動: ManagedStart()の中でTouchableMeshsが上書きされるので、その後にセットし直す
+        osawariHead.TouchableMeshs = drawables;
+        Debug.Log(osawariHead.TouchableMeshs.Length + "個の全メッシュを登録しました");
     }
 
     void Update()
     {
         if (Input.GetMouseButtonDown(0))
         {
-            // Debug.Log("クリック検知、OnMouseUpTrigger を呼び出します");
             TargetOsawariManager.OnMouseUpTrigger();
-            // Debug.Log("OnMouseUpTrigger 呼び出し完了(エラーなし)");
         }
     }
 }

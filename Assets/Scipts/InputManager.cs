@@ -83,22 +83,22 @@ public class InputManager : MonoBehaviour
 	}
 
 	private bool _anyModalOpen
-{
-    get
-    {
-    
+	{
+		get
+		{
 
-        if (_manager.GetScene() != null)
-        {
-            if (!_manager.GetScene().IsModalWindowOpen.Value && !_manager.GetScene().IsResultWindowOpen.Value)
-            {
-                return _messageWindowUIPresenter.ShowingMessage;
-            }
-            return true;
-        }
-        return false;
-    }
-}
+
+			if (_manager.GetScene() != null)
+			{
+				if (!_manager.GetScene().IsModalWindowOpen.Value && !_manager.GetScene().IsResultWindowOpen.Value)
+				{
+					return _messageWindowUIPresenter.ShowingMessage;
+				}
+				return true;
+			}
+			return false;
+		}
+	}
 
 	public IReadOnlyReactiveProperty<bool> IsInOsawari => _isInOsawari;
 
@@ -111,8 +111,8 @@ public class InputManager : MonoBehaviour
 				CubismRaycastHit[] array = new CubismRaycastHit[8];
 				Ray ray = Camera.main.ScreenPointToRay(_input.GetPosition());
 
-				 int hitCount = _raycaster.Raycast(ray, array);
-            Debug.Log("Raycastヒット数: " + hitCount);   // ← この行を追加
+				int hitCount = _raycaster.Raycast(ray, array);
+				Debug.Log("Raycastヒット数: " + hitCount);   // ← この行を追加
 				_raycaster.Raycast(ray, array);
 				CubismRaycastHit[] array2 = array;
 				for (int i = 0; i < array2.Length; i++)
@@ -123,14 +123,25 @@ public class InputManager : MonoBehaviour
 						return false;
 					}
 					AbstractOsawari osawariFromDrawable = _manager.GetOsawariFromDrawable(cubismRaycastHit.Drawable);
+
+					Debug.Log("osawariFromDrawable は null か: " + (osawariFromDrawable == null));
+					if (osawariFromDrawable != null)
+					{
+						Debug.Log("GetConstraints: " + osawariFromDrawable.GetConstraints() + ", CanTouchMesh: " + osawariFromDrawable.CanTouchMesh(cubismRaycastHit.Drawable));
+					}
+
 					if (null != osawariFromDrawable && osawariFromDrawable.GetConstraints() && osawariFromDrawable.CanTouchMesh(cubismRaycastHit.Drawable))
 					{
 						return true;
 					}
 				}
 			}
-			catch (Exception)
+			// catch (Exception)
+			// {
+			// }
+			catch (Exception e)
 			{
+				Debug.LogException(e);   // ← 一時的に追加
 			}
 			return false;
 		}
@@ -159,7 +170,7 @@ public class InputManager : MonoBehaviour
 		IsMouseOnUI = false;
 		_utage = UnityEngine.Object.FindObjectOfType<UtageManager>();
 		_messageWindowUIPresenter = UnityEngine.Object.FindObjectOfType<MessageWindowUIPresenter>();
-		
+
 		SetUpRx();
 	}
 
@@ -170,70 +181,70 @@ public class InputManager : MonoBehaviour
 
 	private void SetUpRx()
 	{
-		
+
 		IObservable<long> source = from _ in Observable.EveryGameObjectUpdate()
-			where _input.InputMouseRelease()
-			select _;
+								   where _input.InputMouseRelease()
+								   select _;
 		IObservable<long> source2 = from _ in Observable.EveryGameObjectUpdate()
-			where _input.InputGrab() && !_pressed
-			select _;
+									where _input.InputGrab() && !_pressed
+									select _;
 		IObservable<long> source3 = from _ in Observable.EveryUpdate()
-			where _input.GetAxis() != 0f
-			select _;
+									where _input.GetAxis() != 0f
+									select _;
 		_ = from _ in Observable.EveryGameObjectUpdate()
 			where _input.InputSpecialRelease()
 			select _;
 		(from _ in source2
-			where _manager.GetScene() == null || !_manager.GetScene().IsModalWindowOpen.Value
-			 where _raycaster != null && null != Camera.main
-			//where null != Camera.main //テスト用
-			select new
-			{
-				Results = new CubismRaycastHit[8],
-				Ray = Camera.main.ScreenPointToRay(_input.GetPosition())
-			}).Subscribe(async x =>
-		{
-			 Debug.Log("Subscribeの中身に到達した");   // ← この1行を追加
-			_pressed = true;
-			_pressedMouseOn = _mouseOn;
-			try
-			{
-				switch (MouseOn)
-				{
-				case MouseOn.None:
-					_isInOsawari.Value = true;
-					await MoveCamera(_tokenSource.Token);
-					break;
-				case MouseOn.Osawari:
-				{
-					_isInOsawari.Value = true;
-					int hitCount = _raycaster.Raycast(x.Ray, x.Results);
-					await UpdateWhileClick(x.Results, hitCount, _tokenSource.Token);
-					_manager.OnMouseUpTrigger();
-					break;
-				}
-				case MouseOn.Edge:
-					await ResizeVariableSizeObject(_tokenSource.Token);
-					break;
-				case MouseOn.VariableSizeObject:
-					await MoveVariableSizeObject(_tokenSource.Token);
-					break;
-				case MouseOn.UI:
-					break;
-				}
-			}
-			catch (OperationCanceledException)
-			{
-				_disposables.Dispose();
-			}
-			finally
-			{
-				if (_isInOsawari.Value)
-				{
-					_manager.OnMouseUpTrigger();
-				}
-			}
-		}).AddTo(_disposables);
+		 where _manager.GetScene() == null || !_manager.GetScene().IsModalWindowOpen.Value
+		 where _raycaster != null && null != Camera.main
+		 //where null != Camera.main //テスト用
+		 select new
+		 {
+			 Results = new CubismRaycastHit[8],
+			 Ray = Camera.main.ScreenPointToRay(_input.GetPosition())
+		 }).Subscribe(async x =>
+	 {
+		 Debug.Log("Subscribeの中身に到達した");   // ← この1行を追加
+		 _pressed = true;
+		 _pressedMouseOn = _mouseOn;
+		 try
+		 {
+			 switch (MouseOn)
+			 {
+				 case MouseOn.None:
+					 _isInOsawari.Value = true;
+					 await MoveCamera(_tokenSource.Token);
+					 break;
+				 case MouseOn.Osawari:
+					 {
+						 _isInOsawari.Value = true;
+						 int hitCount = _raycaster.Raycast(x.Ray, x.Results);
+						 await UpdateWhileClick(x.Results, hitCount, _tokenSource.Token);
+						 _manager.OnMouseUpTrigger();
+						 break;
+					 }
+				 case MouseOn.Edge:
+					 await ResizeVariableSizeObject(_tokenSource.Token);
+					 break;
+				 case MouseOn.VariableSizeObject:
+					 await MoveVariableSizeObject(_tokenSource.Token);
+					 break;
+				 case MouseOn.UI:
+					 break;
+			 }
+		 }
+		 catch (OperationCanceledException)
+		 {
+			 _disposables.Dispose();
+		 }
+		 finally
+		 {
+			 if (_isInOsawari.Value)
+			 {
+				 _manager.OnMouseUpTrigger();
+			 }
+		 }
+	 }).AddTo(_disposables);
 		source.Subscribe(delegate
 		{
 			_isInOsawari.Value = false;

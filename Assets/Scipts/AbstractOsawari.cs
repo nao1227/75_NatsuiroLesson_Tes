@@ -7,7 +7,7 @@ using Live2D.Cubism.Core;
 
 using Paidia.satsuki1;
 using UnityEngine;
-using Stubs;    
+using Stubs;
 
 public abstract class AbstractOsawari : MonoBehaviour
 {
@@ -23,7 +23,7 @@ public abstract class AbstractOsawari : MonoBehaviour
 	protected float ParameterAngle;
 
 	[SerializeField]
-	protected ParameterDictionary ParameterNumbers;
+	protected ParameterDictionary ParameterNumbers = new ParameterDictionary();
 
 	[SerializeField]
 	public CubismDrawable Mesh;
@@ -84,7 +84,8 @@ public abstract class AbstractOsawari : MonoBehaviour
 
 	public List<OsawariEvent> OnMouseUpEvents;
 
-	public List<OsawariBlocker> Blockers;
+	// public List<OsawariBlocker> Blockers;
+	public List<OsawariBlocker> Blockers = new List<OsawariBlocker>();
 
 	public int HitAreaFlagParameter = -1;
 

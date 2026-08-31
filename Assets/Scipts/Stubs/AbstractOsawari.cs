@@ -9,6 +9,7 @@ namespace Stubs
 
         public bool GetConstraints()
         {
+            UnityEngine.Debug.Log("GetConstraints が呼ばれた");
             return true;
         }
 
