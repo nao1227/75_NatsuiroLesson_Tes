@@ -19,5 +19,6 @@ namespace Stubs
     public class SceneContextManager
     {
         public bool AllowOsawari;
+        public SceneContext CurrentSceneContext;   // ← 追加
     }
 }

@@ -78,11 +78,14 @@ public abstract class AbstractOsawari : MonoBehaviour
 
 	public int LimitMagnitude = 50;
 
-	public List<OsawariEvent> OnTouchEvents;
+	// public List<OsawariEvent> OnTouchEvents;
 
-	public List<OsawariEvent> TriggeredEvents;
+	// public List<OsawariEvent> TriggeredEvents;
 
-	public List<OsawariEvent> OnMouseUpEvents;
+	// public List<OsawariEvent> OnMouseUpEvents;
+	public List<OsawariEvent> OnTouchEvents = new List<OsawariEvent>();
+	public List<OsawariEvent> TriggeredEvents = new List<OsawariEvent>();
+	public List<OsawariEvent> OnMouseUpEvents = new List<OsawariEvent>();
 
 	// public List<OsawariBlocker> Blockers;
 	public List<OsawariBlocker> Blockers = new List<OsawariBlocker>();

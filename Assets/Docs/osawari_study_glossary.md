@@ -337,3 +337,59 @@ ScriptExecuteEvent.cs(本物、OsawariEventの派生、UnityEventを呼ぶだけ
    (ただし `OnTouchEvents` 自体も、OsawariHeadにまだ何も登録していない可能性があるため、
    テストコード側で `OsawariHead.OnTouchEvents` にダミーの `ScriptExecuteEvent` を
    1つ追加する作業が別途必要になる見込み)
+
+# オサワリシステム クリック処理 - 作業再開メモ
+
+## 目標
+Unityゲーム(AssetRipperで吸い出したプロジェクト)で、オサワリシステムのクリック処理を動かす。
+クリックしたら`OnTouchEvents`が発火する(セリフ等の反応が出る)ところまでが目標。
+
+## 進行度
+```
+当たり判定(Raycast) ✅
+MouseOn判定(Osawari) ✅
+クリック処理パイプライン(OnClick〜OnFirstClick) ✅
+OnTouchEvents発火(DummyTouchEvent) ⬜️ ← 今ここで中断
+```
+
+## 直前の状態
+`DummyTouchEvent`(OsawariEventを継承したテスト用クラス、InvokeCoreでDebug.Logするだけ)を
+`OsawariHead.OnTouchEvents`に登録済み。クリックすると`OnFirstClick()`まで到達するが、
+`OsawariEvent.IsFullfillCondition()`内で`Conditions`(List<EventCondition>)がnullのため
+`ArgumentNullException`が発生している。
+
+## 次にやること(再開したらここから)
+`OsawariEvent.cs`のフィールド宣言に、以下のようにデフォルト値(`new`)を追記する。
+**まだ未実施。**
+
+```csharp
+public List<FlagEnum> FlagsOnComplete = new List<FlagEnum>();
+public List<FlagEnum> FlagsOffOnComplete = new List<FlagEnum>();
+public RandomSE SE = new RandomSE();
+public StatusChange StatusChange = new StatusChange();
+public List<EventCondition> Conditions = new List<EventCondition>();
+public EventFlagCondition FlagCondition = new EventFlagCondition();
+public EventScenarioReadCondition ScenarioReadCondition = new EventScenarioReadCondition();
+```
+
+これを直せば、`IsFullfillCondition()`→`InvokeEvent()`→`DummyTouchEvent.InvokeCore()`まで進み、
+「★ダミーイベント発火した!★」のログが出る見込み。
+
+## これまで踏んだエラーパターン(繰り返し出てくる教訓)
+`Stubs`名前空間の自作クラスは、Unity Inspector上でシリアライズさせるには
+`[System.Serializable]`が必須。付け忘れると実行時にフィールドが`null`のままになり、
+`NullReferenceException`または`ArgumentNullException`(LINQのCount等)が発生する。
+対処は該当フィールドの宣言に`= new ○○();`を追記するのが基本パターン。
+
+## 主要クラスの役割(おさらい)
+- `InputManager` : 入力を検知し、いつ何を呼ぶかの手順を管理
+- `OsawariManager` : ゲームロジック全体の司令塔。パーツ・周辺システムを繋ぐ
+- `AbstractOsawari`(`OsawariHead`) : 実際に触られる体のパーツ本体
+- `OsawariEvent`(`ScriptExecuteEvent`等) : 条件判定・待機・演出発動を担う汎用フレームワーク
+- `ActionManager` : 興奮度やパーツの状態を横断的に見て、シナリオ的な演出(`OsawariAction`)を発動
+
+## Unity構成の注意点
+`OsawariManager`と`OsawariHead`は同じGameObjectに乗せる必要がある
+(`GetComponent<OsawariHead>()`が同一GameObject内しか探さないため)。
+
+

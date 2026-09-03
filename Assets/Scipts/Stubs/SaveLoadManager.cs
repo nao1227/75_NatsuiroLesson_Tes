@@ -6,12 +6,20 @@ namespace Stubs
     public static UnsavedDataClass UnsavedData = new UnsavedDataClass();
 }
 
- public class UnsavedDataClass
+  public class UnsavedDataClass
     {
         public int KissCount;
         public int FellaSceneCount;
         public int Days;
+        public GlobalFlagsClass GlobalFlags = new GlobalFlagsClass();   // ← 追加
+        public bool SubEventShown;                                      // ← 追加
     }
+ public class GlobalFlagsClass
+    {
+        public bool SkippedToDay6;
+        public void SetFlag(FlagEnum flag, bool isOn) { }
+    }
+
     
 public class GlobalDataClass
 {
