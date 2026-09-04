@@ -31,7 +31,12 @@ public class OsawariManagerTester : MonoBehaviour
         TargetOsawariManager.ContextOsawariTargets = new Stubs.ContextOsawariTargetList();
         TargetOsawariManager.ContextOsawariTargets.RegisterTargets(targetList);
 
+        var dummyEventObj = new GameObject("DummyTouchEvent");
+        
+        var dummyEvent = dummyEventObj.AddComponent<DummyTouchEvent>();
+        dummyEvent.StatusObject = FindObjectOfType<Stubs.StatusObject>();   // ← この1行を追加
 
+        osawariHead.OnTouchEvents.Add(dummyEvent);
         // ← 追加: ここでManagedStart()を呼ぶ(これが今回追加したかった1行)
         // osawariHead.ManagedStart(TargetOsawariManager, System.Threading.CancellationToken.None);
         try
@@ -43,9 +48,7 @@ public class OsawariManagerTester : MonoBehaviour
             Debug.LogException(e);
         }
 
-        var dummyEventObj = new GameObject("DummyTouchEvent");
-        var dummyEvent = dummyEventObj.AddComponent<DummyTouchEvent>();
-        osawariHead.OnTouchEvents.Add(dummyEvent);
+
 
         // ← 移動: ManagedStart()の中でTouchableMeshsが上書きされるので、その後にセットし直す
         osawariHead.TouchableMeshs = drawables;

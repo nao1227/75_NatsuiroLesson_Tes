@@ -32,11 +32,14 @@ namespace Paidia.satsuki1
 
 		protected CancellationTokenSource _ctsForInvoke;
 
-		public List<FlagEnum> FlagsOnComplete;
+		// public List<FlagEnum> FlagsOnComplete;
 
-		public List<FlagEnum> FlagsOffOnComplete;
+		// public List<FlagEnum> FlagsOffOnComplete;
 
-		public RandomSE SE;
+		// public RandomSE SE;
+		public List<FlagEnum> FlagsOnComplete = new List<FlagEnum>();
+		public List<FlagEnum> FlagsOffOnComplete = new List<FlagEnum>();
+		public RandomSE SE = new RandomSE();
 
 		public bool SkipIfInPiston;
 
@@ -52,13 +55,17 @@ namespace Paidia.satsuki1
 
 		public bool IsValidOnFreeHMode;
 
-		public StatusChange StatusChange;
+		// public StatusChange StatusChange;
 
-		public List<EventCondition> Conditions;
+		// public List<EventCondition> Conditions;
 
-		public EventFlagCondition FlagCondition;
+		// public EventFlagCondition FlagCondition;
 
-		public EventScenarioReadCondition ScenarioReadCondition;
+		// public EventScenarioReadCondition ScenarioReadCondition;
+		public StatusChange StatusChange = new StatusChange();
+		public List<EventCondition> Conditions = new List<EventCondition>();
+		public EventFlagCondition FlagCondition = new EventFlagCondition();
+		public EventScenarioReadCondition ScenarioReadCondition = new EventScenarioReadCondition();
 
 		public virtual async UniTask InvokeEvent(TemporaryStatus status, OsawariConditions conditions)
 		{
@@ -99,11 +106,11 @@ namespace Paidia.satsuki1
 						}
 					}
 					await InvokeCore(status, conditions);
-					FlagsOnComplete.ForEach(delegate(FlagEnum x)
+					FlagsOnComplete.ForEach(delegate (FlagEnum x)
 					{
 						SaveLoadManager.UnsavedData.GlobalFlags.SetFlag(x, isOn: true);
 					});
-					FlagsOffOnComplete.ForEach(delegate(FlagEnum x)
+					FlagsOffOnComplete.ForEach(delegate (FlagEnum x)
 					{
 						SaveLoadManager.UnsavedData.GlobalFlags.SetFlag(x, isOn: false);
 					});
