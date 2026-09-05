@@ -1,53 +1,72 @@
-# オサワリシステム クリック処理 - 引き継ぎメモ
+# オサワリシステム クリック処理 - 引き継ぎメモ(第2版)
 
-## 大きな成果
-クリック処理の目標は**達成済み**。
-`InputManager`のクリック検知 → `MouseOn: Osawari`判定 → `OsawariManager.UpdateWhileClicked`
-→ `AbstractOsawari.OnClick`→`OnFirstClick`→`OnTouchEvents`→`OsawariEvent.InvokeEvent`
-→`InvokeCore`まで、パイプライン全体が動作し、テスト用の`DummyTouchEvent`が
-実際に「★ダミーイベント発火した!★」とログ出力するところまで確認済み。
-
-## 現在の残課題(唯一)
-クリックすると、稀に(あるいは毎回)以下のエラーが出るが、最終的には成功する。
+## これまでの成果(達成済み)
+クリック処理パイプラインは完成し、エラーなしで動作することを確認済み。
 
 ```
-NullReferenceException(握りつぶされてStackTraceのみログ出力)
-at Paidia.satsuki1.OsawariEvent.AwaitInvokeEvent (...) OsawariEvent.cs:97
+Raycast当たり判定 → MouseOn:Osawari判定 → OsawariManager.UpdateWhileClicked
+→ AbstractOsawari.OnClick → OnFirstClick → OnTouchEvents → OsawariEvent.InvokeEvent
+→ InvokeCore(DummyTouchEventでDebug.Logが実際に発火)
 ```
 
-97行目は `StatusObject.TemporaryStatus.AddExciteValue(StatusChange.Excite);`。
-`StatusChange`はデフォルト値`= new StatusChange();`が入っているため、
-**`StatusObject`自体が`null`である可能性が高い**。
+途中で発生した「OsawariHeadコンポーネントが2つのGameObjectに重複していた」ことによる
+NullReferenceExceptionは、重複を1つに整理して解消済み。
 
-### 最有力の仮説
-`OsawariHead.OnTouchEvents`リストに、**2つの別々の`DummyTouchEvent`インスタンスが
-重複登録されている**可能性がある。
+## 次の目標(このチャットでやりたいこと)
+1. **構成の整理**: 元のゲームの設計では`OsawariManager`はLive2Dモデルの
+   GameObject自体にアタッチされている(解析して判明)。現状の実験プロジェクトでは
+   `OsawariManager`が単独の別GameObjectになっているため、**Live2Dモデル
+   (`hiyori_free_t08`)側に`OsawariManager`を移動**し、元の設計に近づけたい。
+   目的は「今後の学習で構成がわからなくなる/トラブルになるのを防ぐ」ため。
+2. **クリック処理の完成**: ダミーイベントの発火確認で終わらせず、実際にクリックしたら
+   Live2Dモデルが動く(パラメータが変化する)ところまで完成させたい。
 
-- Hierarchy上に手動作成した`OnTouch`(GameObject、`DummyTouchEvent`アタッチ済み)を、
-  Inspector上で`OnTouchEvents`リストにドラッグ&ドロップで登録した(可能性)
-- 加えて`OsawariManagerTester.cs`のコード側でも、動的に`new GameObject(...)`で
-  別のインスタンスを作って`OnTouchEvents.Add(dummyEvent)`している
-- コード側で作った方だけ`dummyEvent.StatusObject = FindObjectOfType<Stubs.StatusObject>();`
-  で明示的にセットしているが、Inspector経由で登録した方は`StatusObject`が未設定のまま
+## 構成変更にあたっての注意点(これまでの教訓から)
+- `OsawariManager`と`OsawariHead`は**必ず同じGameObject**に乗せる必要がある
+  (`OsawariManagerTester.cs`の`GetComponent<OsawariHead>()`が同一GameObjectしか探さないため)。
+  移動する際はセットで動かすこと。
+- 同じコンポーネントを複数のGameObjectに重複してアタッチすると、Unity側の参照解決が
+  混線しNullReferenceExceptionの原因になることが実際にあった。移動する際は、
+  元あった場所に重複コンポーネントを残さないよう注意する。
+- `InputManagerTester.cs`は`ModelRaycaster`(`CubismRaycaster`、Live2Dモデルに付属)を
+  参照している。`OsawariManager`をモデル側に移動しても、この参照自体は
+  変わらないはずだが、念のため確認する。
+- `OsawariManagerTester.cs`の`TargetOsawariManager.Model.Drawables`など、
+  `Model`(`CubismModel`)がLive2Dモデル自身を指している前提のコードが複数ある。
+  `OsawariManager`をモデル上に移動した後も、`Model`フィールドの参照先が
+  正しくモデル自身になっているか確認が必要。
 
-### 次にやること
-1. Unity Editorで`OsawariHead`コンポーネントのInspectorを開き、
-   `On Touch Events`リストの要素数を確認する(1個か2個か)
-2. もし2個あれば、Inspector側の重複登録を削除する。
-   もしくはInspector側の`OnTouch`にも`StatusObject`を手動でアサインする
-3. どちらか一方の登録方法(Inspector手動 or コード動的生成)に統一するのが望ましい
+## クリック処理を「実際にモデルが動く」ところまで進めるための材料
+`OsawariHead.cs`(本物)は、以下のメソッドで実際にLive2Dパラメータを動かす設計になっている。
 
-## OsawariManagerTester.cs の現在の該当箇所(参考)
 ```csharp
-var dummyEventObj = new GameObject("DummyTouchEvent");
-var dummyEvent = dummyEventObj.AddComponent<DummyTouchEvent>();
-dummyEvent.StatusObject = FindObjectOfType<Stubs.StatusObject>();
-osawariHead.OnTouchEvents.Add(dummyEvent);
-
-osawariHead.ManagedStart(TargetOsawariManager, System.Threading.CancellationToken.None);
-
-osawariHead.TouchableMeshs = drawables;
+protected override void UpdateParamsCore(Vector3 move)
+{
+    ...
+    _headY += move.y / SensitivityY;
+    _headX += move.x / SensitivityX;
+    _manHand.Appear(GetActiveHand());
+}
 ```
+
+これが呼ばれるための条件(`AbstractOsawari.OnClick`内):
+```csharp
+if (GetConstraintsCore() && (_handManager.IsGrabbing(this) || (!IsGrabbable && !IsAnimating)))
+{
+    UpdateParams(ConvertMovementVec3ForParams());
+}
+```
+
+`_handManager.IsGrabbing(this)`が`true`になるには、`OnFirstClick()`の中の
+`_handManager.Grab(hand.HandType, this);`が実行されている必要がある。
+`_handManager`は現在`Stubs.HandManager`(スタブ)なので、`IsGrabbing`や`Grab`の
+中身が「何もしない」実装になっていないか確認し、必要なら実装を追加する。
+
+`InitializeParams()`(`OsawariHead.cs`)で`parameters[ParameterName.HeadY]`等を
+参照しているため、`ParameterNumbers`(`Stubs.ParameterDictionary`)の
+`HeadX=0, HeadY=1`という値が、実際に使っているLive2Dモデル(hiyori_free_t08)の
+パラメータ番号(`角度X`=0, `角度Y`=1)と一致しているかも確認するとよい
+(Cubism公式サンプルモデルは大抵この並びだが、要検証)。
 
 ## これまでの主な教訓(繰り返し出てきたパターン)
 1. `Stubs`名前空間の自作クラスは`[System.Serializable]`必須。付け忘れると
@@ -56,13 +75,12 @@ osawariHead.TouchableMeshs = drawables;
 2. `MonoBehaviour`を継承するクラス(`StatusObject`等)は`new`できない。
    `FindObjectOfType<T>()`や`AddComponent<T>()`で明示的に取得・生成する必要がある。
 3. `GetComponent<T>()`は同一GameObject内しか探さない。
-   `OsawariManager`と`OsawariHead`は同じGameObjectに乗せる必要がある。
-4. `Initialize()`(イベントの初期化、`_ctsForInvoke`のセットアップ)は
-   `ManagedStart()`内の`foreach`で呼ばれるため、`OnTouchEvents.Add(...)`は
-   必ず`ManagedStart()`より**前**に行う必要がある。
-5. 名前が同じクラスが「本物(namespace Paidia.satsuki1)」と「スタブ(グローバルor別namespace)」
-   の両方に存在すると型解決の衝突が起きる。古いスタブ版を導入した本物と置き換える際は、
-   旧スタブファイルを削除または名前空間を揃える必要がある。
+4. `Initialize()`(イベントの初期化)は`ManagedStart()`内の`foreach`で呼ばれるため、
+   `OnTouchEvents.Add(...)`は必ず`ManagedStart()`より**前**に行う必要がある。
+5. 名前が同じクラスが「本物(namespace Paidia.satsuki1)」と「スタブ」の両方に
+   存在すると型解決の衝突が起きる。旧スタブは削除するか名前空間を揃える。
+6. 同一コンポーネントを複数のGameObjectに重複させると、Unity側の参照解決が
+   混線しNREの原因になることがある。
 
 ## 主要クラスの役割
 - `InputManager` : 入力を検知し、いつ何を呼ぶかの手順を管理
@@ -76,4 +94,4 @@ osawariHead.TouchableMeshs = drawables;
 そのため元のprefab/シーンにOsawariHeadの実データ(Mesh、ParameterNumbers等)は存在せず、
 コピーではなく自作で用意している。当たり判定は本来「HitArea」という専用の
 判定用メッシュ(CubismDrawable型)を使う設計だったが、実験では簡易的に全83メッシュを
-`TouchableMeshs`にまとめて割り当てている。
+`TouchableMeshs`にまとめて割り当てている(現在は`HitArea`1個に絞られている)。
