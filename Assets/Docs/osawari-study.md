@@ -1,0 +1,26 @@
+---
+name: osawari-study
+description: Bottom-up reverse-engineering study of the Osawari Unity/C# codebase — overall progress, methodology, and lessons. Class list in [[osawari-classes]], click-processing details in [[osawari-click-flow]]
+---
+
+- Deep-diving into the "Osawari" Unity/C# codebase via a systematic bottom-up reverse-engineering approach
+- Uses a separate experimental Unity project (`75_NatsuiroLesson_Tes`) for live verification
+- Previously maintained a running `osawari_study_glossary.md` file, manually re-uploaded each new chat, to preserve context across sessions; now recognizes this is superseded by persistent memory (no longer needs to re-upload a handoff file each time), and decided to split memory into 3 files for clarity: this file (progress/methodology/lessons), osawari-classes.md (real/stub/dummy class list), and osawari-click-flow.md (detailed click-processing flow)
+- Current focus: クリック処理の全パイプライン(Raycast→イベント発火→離す処理まで)は達成済み(詳細はosawari-click-flow.md)。次はクリックで実際にLive2Dモデルが動くところまで進める段階
+- 次の目標(引き継ぎファイル第2版より): (1)構成整理としてOsawariManagerをLive2Dモデル(hiyori_free_t08)のGameObjectに移動し、OsawariHeadと同一GameObjectに揃える(完了済み、詳細はosawari-classes/click-flow参照)。(2)クリック処理を「実際にモデルが動く」ところまで完成させる: OsawariHead.UpdateParamsCoreがLive2Dパラメータを動かす設計で、AbstractOsawari.OnClick内のGetConstraintsCore() && (_handManager.IsGrabbing(this) || (!IsGrabbable && !IsAnimating))が満たされる必要があり、IsGrabbingがtrueになるにはOnFirstClick内のGrab(hand.HandType, this)が実行されている必要がある。現在_handManagerはStubs.HandManagerのため、IsGrabbing/Grabの実装内容を確認・必要なら実装追加が必要(未着手)。またInitializeParams()が参照するParameterNumbers(HeadX=0,HeadY=1)がhiyori_free_t08モデルの実際のパラメータ番号(角度X=0,角度Y=1)と一致しているか要検証
+- 現状把握: クリック処理(Osawariパーツを直接触る)は自分で実装して動作確認済みだが、関連クラスが多すぎるためHandManager/OsawariCameraManager等の周辺スタブは「動かすこと優先」で用意してもらったのみで、中身を理解できていない自覚があり、このチャットで一つずつ復習中
+- Methodology: map class dependencies via field declarations → create stub classes under `namespace Stubs` → resolve compilation errors incrementally → run live verification tests in the experimental Unity project
+- Previously: `OsawariManager` (30+ dependencies) — stub class creation, dependency mapping, verifying method execution paths including `IInputTrigger` implementation and `UpdateWhileClicked` logic
+- Fully verified `MouseInputProvider` and `InputManager` (including `MouseOn.None` and `MouseOn.Osawari` routes)
+- Understood the delegation pattern where `OsawariManager` acts as gatekeeper passing control to `_targetOsawari.OnClick()`
+- Logged discoveries: asmdef files must explicitly reference `Live2D.Cubism`, `UniRx`, and `UniTask`; `MonoBehaviour`-inheriting stubs should be in separate files; `Detached HEAD` Git recovery via `git reflog`; separating `StatusObject` into its own file resolved a Unity component recognition issue
+- Earlier sessions covered: the `ContextManager` system and context-switching architecture; the status/emotion system (`StatusObject`, `TemporaryStatus`, `FeelingParams`, `PersistantStatus`) including `CancellationTokenSource` debounce patterns; `AbstractOsawari`, `OsawariHead`, `OsawariEvent`, `EventCondition` class relationships and design patterns (Template Method, Strategy, Single Responsibility)
+- Used UnityExplorer's C# REPL to inspect runtime data (e.g., enumerating Live2D model parameters, discovering `RightHandOnHead`/`LeftHandOnHead` share the same index)
+- Researched Live2D Cubism Editor FREE vs PRO limitations and alternative tools
+- Initial sessions covered: overall architecture of `OsawariManager`, `InputManager`, `MouseInputProvider`, `IInputProvider/IInputTrigger`; the `TitleScenePresenter` MVP architecture with UniRx, DOTween, UniTask, and Addressables; `Scene`/`BaseScene` inheritance and Template Method pattern; `GetConstraints()` touch validation pipeline
+- Studied UniRx and UniTask systematically: operators (`Where`, `Select`, `CombineLatest`, `Merge`, `Throttle`, `Subscribe`, `AddTo`, `Dispose`), `CompositeDisposable` subscription management, `UniTask.Delay/DelayFrame/Yield`, `UniTaskVoid` vs `UniTask`, and `SetUpRx()` method internals
+- Covered OOP and design patterns: Dependency Injection, Facade, Strategy, Template Method, Observer, and Composite, with `OsawariManager`→`InputManager` injection flow as the primary concrete example
+- Set up Unity Test Runner: asmdef architecture (`GameScripts.asmdef`, `Tests.asmdef`), NUnit AAA pattern, EditMode tests for `ExperienceCalculator`; upgraded Unity from `2022.3.10f1` to `2022.3.62f3` (LTS) to resolve Burst compiler bugs
+- Uses GitHub Desktop for version control with checkpoint commits before risky changes
+- Earlier troubleshooting of an AssetRipper-exported Unity project: resolved package version mismatches (removing Unity 6-only packages, downgrading `com.unity.ai.navigation`), fixed invalid `manifest.json` JSON, handled TMP duplicate-definition conflicts from decompiled source, deferred `DllNotFoundException` for `Live2DCubismCore`
+- Used UnityExplorer to analyze Animator components at runtime, including HarmonyLib to patch `Animator.SetBool` and trace the calling class (`Live2DAnimatorSetBool`)
