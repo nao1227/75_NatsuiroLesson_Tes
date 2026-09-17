@@ -12,7 +12,7 @@ namespace Stubs
         }
 
         public List<Hand> GetHandGrabbing(global::AbstractOsawari target) { return new List<Hand>(); }
-        public Hand GetHandToUse() { return new Hand(); }
+        public Hand GetHandToUse() { return new Hand(HandType.Right); }
         public void Grab(HandType type, global::AbstractOsawari target) { }
         public void Release(HandType type) { }
         public void MoveHand(HandType type, ParameterValue value) { }

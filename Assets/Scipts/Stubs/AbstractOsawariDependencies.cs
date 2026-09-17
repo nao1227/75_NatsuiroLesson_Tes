@@ -9,17 +9,6 @@ namespace Stubs
         HeadX, HeadY, RightHandOnHead, LeftHandOnHead
     }
 
-    public enum HandType
-    {
-        Right, Left
-    }
-
-    public class Hand
-    {
-        public HandType HandType;
-        public bool IsGrabbing;   // ← この行を追加
-    }
-
 
 
     public class ParameterDictionary
