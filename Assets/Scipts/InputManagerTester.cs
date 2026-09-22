@@ -10,7 +10,7 @@ public class InputManagerTester : MonoBehaviour
     void Start()
     {
         var mouseInput = new MouseInputProvider(null);
-        TargetOsawariManager.HandManager = new Stubs.HandManager();
+        TargetOsawariManager.HandManager = new Paidia.satsuki1.HandManager();
         TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
         
         

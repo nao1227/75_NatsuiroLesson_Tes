@@ -13,7 +13,7 @@ public class OsawariManagerTester : MonoBehaviour
     TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
     TargetOsawariManager.Scene = new Stubs.HScene();
 
-    TargetOsawariManager.HandManager ??= new Stubs.HandManager();
+    TargetOsawariManager.HandManager ??= new Paidia.satsuki1.HandManager();
 
     var scene = TargetOsawariManager.GetScene();
     var raycaster = TargetOsawariManager.GetCubismRaycaster();
