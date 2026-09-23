@@ -96,6 +96,7 @@ public class OsawariHead : AbstractOsawari
 
 	protected override void UpdateParamsCore(Vector3 move)
 	{
+		Debug.Log($"UpdateParamsCore 呼ばれた: move={move}");
 		if (null != _face)
 		{
 			_face.AllowBlink = false;

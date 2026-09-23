@@ -369,6 +369,9 @@ public abstract class AbstractOsawari : MonoBehaviour
 				}
 			}
 		}
+		 // ↓ ここに追加
+    Debug.Log($"CanGrab: {_manager.CanGrab(this)}, IsGrabbing: {_handManager.IsGrabbing(this)}, IsGrabbable: {IsGrabbable}, IsAnimating: {IsAnimating}");
+	
 		if (GetConstraintsCore() && (_handManager.IsGrabbing(this) || (!IsGrabbable && !IsAnimating)))
 		{
 			UpdateParams(ConvertMovementVec3ForParams());
