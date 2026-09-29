@@ -1,0 +1,41 @@
+using System;
+using UnityEngine;
+using UnityEngine.UI;
+using Utage;
+
+[AddComponentMenu("Utage/TemplateUI/UtageUguiSceneGalleryItem")]
+public class UtageUguiSceneGalleryItem : MonoBehaviour
+{
+	public AdvUguiLoadGraphicFile texture;
+
+	public Text title;
+
+	protected AdvSceneGallerySettingData data;
+
+	public AdvSceneGallerySettingData Data => data;
+
+	public virtual void Init(AdvSceneGallerySettingData data, Action<UtageUguiSceneGalleryItem> ButtonClickedEvent, AdvSystemSaveData saveData)
+	{
+		this.data = data;
+		Button component = GetComponent<Button>();
+		component.onClick.AddListener(delegate
+		{
+			ButtonClickedEvent(this);
+		});
+		if (!(component.interactable = saveData.GalleryData.CheckSceneLabels(data.ScenarioLabel)))
+		{
+			texture.gameObject.SetActive(value: false);
+			if ((bool)title)
+			{
+				title.text = "";
+			}
+			return;
+		}
+		texture.gameObject.SetActive(value: true);
+		texture.LoadTextureFile(data.ThumbnailPath);
+		if ((bool)title)
+		{
+			title.text = data.LocalizedTitle;
+		}
+	}
+}

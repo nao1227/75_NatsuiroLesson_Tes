@@ -1,0 +1,41 @@
+namespace Utage
+{
+	public enum SystemText
+	{
+		Yes = 0,
+		No = 1,
+		Ok = 2,
+		Cancel = 3,
+		Back = 4,
+		Clear = 5,
+		Retry = 6,
+		History = 7,
+		Save = 8,
+		Load = 9,
+		On = 10,
+		Off = 11,
+		None = 12,
+		Sound = 13,
+		Review = 14,
+		Restore = 15,
+		QuitGame = 16,
+		DebugInfo = 17,
+		DebugLog = 18,
+		DebugMenu = 19,
+		DeleteSaveAndQuit = 20,
+		DeleteAllSaveDataFilesTitle = 21,
+		DeleteAllSaveDataFilesMessage = 22,
+		DeleteAllCacheFilesTitle = 23,
+		DeleteAllCacheFilesMessage = 24,
+		DeleteAllOutputFilesTitle = 25,
+		DeleteAllOutputFilesMessage = 26,
+		Downloading = 27,
+		DownloadCount = 28,
+		DownloadFinished = 29,
+		WarningNotOnline = 30,
+		WarningNotWifi = 31,
+		ChangeCurrentProject = 32,
+		VersionUpScene = 33,
+		VersionUpScenario = 34
+	}
+}

@@ -1,0 +1,41 @@
+namespace Paidia.satsuki1
+{
+	public enum EventConditionName
+	{
+		LeastExcitement = 0,
+		LeastAtomosphere = 1,
+		LeastStimulus = 2,
+		LeastSpeed = 3,
+		MostSpeed = 4,
+		LeastDistance = 5,
+		IsAtomosphere = 6,
+		MostAtomosphere = 7,
+		MostExcitement = 8,
+		IsRelationShip = 9,
+		LeastRelationShip = 10,
+		MostRelationShip = 11,
+		FlagOn = 12,
+		FlagOff = 13,
+		ScenarioRead = 14,
+		ScenarioNotRead = 15,
+		IsDay = 16,
+		IsDayBefore = 17,
+		IsDayAfter = 18,
+		LeastFavorability = 19,
+		LeastSensitivity = 20,
+		IsCloth = 21,
+		LastSelected = 22,
+		ParamXDiffMoreThan = 23,
+		ParamXDiffLessThan = 24,
+		ParamYDiffMoreThan = 25,
+		ParamYDiffLessThan = 26,
+		NoCondom = 27,
+		MostDistance = 28,
+		TouchingTimeMoreThan = 29,
+		TouchingTimeLessThan = 30,
+		IsWomanMoving = 31,
+		IsInFellatio = 32,
+		Context = 33,
+		IsKissing = 34
+	}
+}
