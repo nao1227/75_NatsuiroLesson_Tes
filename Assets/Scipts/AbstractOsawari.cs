@@ -390,9 +390,11 @@ public abstract class AbstractOsawari : MonoBehaviour
 
 	protected void OnFirstClick()
 	{
+		Debug.Log("Testだよ");
 		_manager.AddFirstStimulus(StimulusIncrementFirstImpact);
 		foreach (OsawariEvent onTouchEvent in OnTouchEvents)
 		{
+			Debug.Log("Testだよ2");
 			if (onTouchEvent.IsFullfillCondition(_manager.TemporaryStatus, _conditions))
 			{
 				onTouchEvent.InvokeEvent(_manager.TemporaryStatus, _conditions).Forget();
@@ -428,6 +430,7 @@ public abstract class AbstractOsawari : MonoBehaviour
 
 	protected virtual void UpdateParams(Vector3 move)
 	{
+		Debug.Log($"UpdateParams 呼ばれた: move={move}");
 		foreach (OsawariEvent triggeredEvent in TriggeredEvents)
 		{
 			if (triggeredEvent.IsFullfillCondition(_manager.TemporaryStatus, _conditions))

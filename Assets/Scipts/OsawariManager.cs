@@ -334,6 +334,7 @@ public class OsawariManager : MonoBehaviour, IInputTrigger
 
 	public void UpdateWhileClicked(CubismRaycastHit[] results, int hitCount, bool isFirst)
 	{
+		
 		Debug.Log("HandManager は null か: " + (HandManager == null));
 		Debug.Log("AllowOsawari は: " + SingletonManager<SceneContextManager>.Instance.AllowOsawari);
 		if (!SingletonManager<SceneContextManager>.Instance.AllowOsawari)
@@ -363,6 +364,7 @@ public class OsawariManager : MonoBehaviour, IInputTrigger
 				}
 			}
 		}
+		Debug.Log($"UpdateWhileClicked 呼ばれた: isFirst={isFirst}, _targetOsawari={(_targetOsawari != null ? _targetOsawari.name : "null")}");
 		if (_targetOsawari != null)
 		{
 			Cursor.visible = false;

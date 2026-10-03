@@ -49,9 +49,9 @@ namespace Stubs
         None
     }
 
-    public class Live2DAnimator
-    {
-    }
+    // public class Live2DAnimator
+    // {
+    // }
 
     public class ActionManager
     {
@@ -76,7 +76,8 @@ namespace Stubs
     public class ContextAnimator
     {
         public OsawariContext Context;
-        public Live2DAnimator Animator;
+        // public Live2DAnimator Animator;
+        public Paidia.satsuki1.Live2DAnimator Animator;
     }
 
     // public class ValuePreserver : MonoBehaviour

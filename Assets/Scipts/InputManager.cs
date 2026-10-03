@@ -270,6 +270,7 @@ public class InputManager : MonoBehaviour
 		_manager.UpdateWhileClicked(results, hitCount, isFirst: true);
 		while (_pressed)
 		{
+			
 			if (_input.InputSpecial())
 			{
 				_manager.OnInputSpecialTrigger(results, hitCount);
@@ -280,6 +281,7 @@ public class InputManager : MonoBehaviour
 			}
 			else
 			{
+			
 				_manager.UpdateWhileClicked(results, hitCount, isFirst: false);
 			}
 			await UniTask.Yield(token);
