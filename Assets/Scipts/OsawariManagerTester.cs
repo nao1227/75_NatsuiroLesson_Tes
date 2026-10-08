@@ -6,31 +6,31 @@ public class OsawariManagerTester : MonoBehaviour
 {
     public OsawariManager TargetOsawariManager;
 
-   void Start()
-{
-    Debug.Log("=== OsawariManager 検証開始 ===");
+    void Start()
+    {
+        Debug.Log("=== OsawariManager 検証開始 ===");
 
-    TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
-    TargetOsawariManager.Scene = new Stubs.HScene();
+        TargetOsawariManager.Raycasters = new Stubs.ContextRaycasterList();
+        TargetOsawariManager.Scene = new Stubs.HScene();
 
-    TargetOsawariManager.HandManager ??= new Paidia.satsuki1.HandManager();
+        TargetOsawariManager.HandManager ??= new Paidia.satsuki1.HandManager();
 
-    var scene = TargetOsawariManager.GetScene();
-    var raycaster = TargetOsawariManager.GetCubismRaycaster();
+        var scene = TargetOsawariManager.GetScene();
+        var raycaster = TargetOsawariManager.GetCubismRaycaster();
 
-    var drawables = TargetOsawariManager.Model.Drawables;
+        var drawables = TargetOsawariManager.Model.Drawables;
 
-    var osawariHead = TargetOsawariManager.GetComponent<OsawariHead>();
+        var osawariHead = TargetOsawariManager.GetComponent<OsawariHead>();
 
-    var targetList = new System.Collections.Generic.List<AbstractOsawari> { osawariHead };
-    TargetOsawariManager.ContextOsawariTargets = new Stubs.ContextOsawariTargetList();
-    TargetOsawariManager.ContextOsawariTargets.RegisterTargets(targetList);
+        var targetList = new System.Collections.Generic.List<AbstractOsawari> { osawariHead };
+        TargetOsawariManager.ContextOsawariTargets = new Stubs.ContextOsawariTargetList();
+        TargetOsawariManager.ContextOsawariTargets.RegisterTargets(targetList);
 
-    osawariHead.ManagedStart(TargetOsawariManager, System.Threading.CancellationToken.None);
-}
+        osawariHead.ManagedStart(TargetOsawariManager, System.Threading.CancellationToken.None);
+    }
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonUp(0))
         {
             TargetOsawariManager.OnMouseUpTrigger();
         }

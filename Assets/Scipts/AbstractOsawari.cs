@@ -374,6 +374,7 @@ public abstract class AbstractOsawari : MonoBehaviour
 	
 		if (GetConstraintsCore() && (_handManager.IsGrabbing(this) || (!IsGrabbable && !IsAnimating)))
 		{
+			Debug.Log("test");
 			UpdateParams(ConvertMovementVec3ForParams());
 		}
 	}
@@ -478,6 +479,7 @@ public abstract class AbstractOsawari : MonoBehaviour
 
 	public virtual async void OnMouseUp(bool fromCancel = false)
 	{
+		 Debug.Log($"[OnMouseUp] 呼ばれた restricted={GetRestricted()} isAuto={IsAuto} fromCancel={fromCancel} count={OnMouseUpEvents.Count}");
 		if (GetRestricted())
 		{
 			return;
@@ -490,6 +492,7 @@ public abstract class AbstractOsawari : MonoBehaviour
 			}
 			foreach (OsawariEvent onMouseUpEvent in OnMouseUpEvents)
 			{
+				Debug.Log("発火");
 				await onMouseUpEvent.InvokeEvent(_manager.TemporaryStatus, _conditions);
 			}
 		}
